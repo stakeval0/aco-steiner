@@ -14,10 +14,10 @@ class ACOTable;
 class ACOSteiner{
   protected:
     ll time=0;
-    double minSpace,maxSpace;
+    double min_space,max_space;
     ACOTable* table;
   public:
-    ACOSteiner(double minSpace,double maxSpace);
+    ACOSteiner(double min_space,double max_space);
     void search();
     ll getTime() const;
     void setMinSpace(double d);

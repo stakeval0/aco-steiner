@@ -12,7 +12,7 @@ class Ant;
 //最良と最悪どちらも取り出したいのでmultiset方式
 class ACOTable : public multiset<Ant*,function<bool(Ant*,Ant*)>> {
   private:
-    ll time=0,maxSize=16;
+    ll time=0,max_size=16;
   public:
     ACOTable();
     Ant selectAnt();

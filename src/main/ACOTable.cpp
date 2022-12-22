@@ -9,16 +9,16 @@ Ant ACOTable::selectAnt(){
   //TODO: 実装!
 }
 double ACOTable::costVariance(){
-  double sum=0,squareSum=0,temp;
+  double sum=0,square_sum=0,temp;
   for(Ant *a:*this){
     temp=a->getAllCost();
-    sum+=temp;squareSum+=temp*temp;
+    sum+=temp;square_sum+=temp*temp;
   }
-  return (squareSum-sum)/this->size();
+  return (square_sum-sum)/this->size();
 }
 void ACOTable::insert(Ant *a){
   multiset::insert(a);
-  if(this->size()>this->maxSize)this->erase(this->begin());
+  if(this->size()>this->max_size)this->erase(this->begin());
 }
 void ACOTable::setTime(ll time){this->time=time;}
-void ACOTable::setTableSize(ll size){this->maxSize=size;}
+void ACOTable::setTableSize(ll size){this->max_size=size;}

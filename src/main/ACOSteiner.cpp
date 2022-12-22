@@ -3,9 +3,9 @@
 #include<functional>
 #include"ACOSteiner.hpp"
 
-ACOSteiner::ACOSteiner(double minSpace,double maxSpace){
-  this->minSpace=minSpace;
-  this->maxSpace=maxSpace;
+ACOSteiner::ACOSteiner(double min_space,double max_space){
+  this->min_space=min_space;
+  this->max_space=max_space;
   this->table=new ACOTable();
 }
 void ACOSteiner::search(){
@@ -16,9 +16,9 @@ void ACOSteiner::search(){
   this->time++;//最後に書く
 }
 ll ACOSteiner::getTime() const {return this->time;}
-void ACOSteiner::setMinSpace(double d){this->minSpace=d;}
-void ACOSteiner::setMaxSpace(double d){this->maxSpace=d;}
-double ACOSteiner::getMinSpace() const {return this->minSpace;}
-double ACOSteiner::getMaxSpace() const {return this->maxSpace;}
+void ACOSteiner::setMinSpace(double d){this->min_space=d;}
+void ACOSteiner::setMaxSpace(double d){this->max_space=d;}
+double ACOSteiner::getMinSpace() const {return this->min_space;}
+double ACOSteiner::getMaxSpace() const {return this->max_space;}
 void ACOSteiner::setTableSize(ll size){this->table->setTableSize(size);}
 const ACOTable* ACOSteiner::getACOTable() const {return this->table;}
