@@ -3,8 +3,6 @@
 #include<array>
 #include<queue>
 #include<functional>
-#include"Ant.hpp"
-#include"ACOTable.hpp"
 using namespace std;
 using ll =long long;
 

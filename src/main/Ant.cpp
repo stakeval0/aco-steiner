@@ -1,13 +1,15 @@
 #include<random>
 #include"Ant.hpp"
+#include"ACOSteiner.hpp"
+#include"ACOTable.hpp"
 using namespace std;
 
 void Ant::searchNewRoute(const ACOSteiner &world,ll current_time){
   const ACOTable *TABLE=world.getACOTable();
   double pheromone_sum=0;
   for(const auto &e:*TABLE)pheromone_sum+=e->pheromone(current_time);
-  random_device seedGen;
-  default_random_engine engine(seedGen());
+  random_device seed_gen;
+  default_random_engine engine(seed_gen());
   uniform_real_distribution<> dist(0,pheromone_sum);
   double rand=dist(engine),sum=0;
   Ant *baseAnt;

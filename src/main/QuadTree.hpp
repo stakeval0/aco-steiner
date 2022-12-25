@@ -1,9 +1,15 @@
+#ifndef _QUAD_TREE_HPP_
+#define _QUAD_TREE_HPP_
 #include<vector>
 #include<array>
 #include<map>
 #include<bitset>
-#include"Ant.hpp"
+#include<set>
+#include<cmath>
+//#include"Ant.hpp"
 using namespace std;
+
+class Ant;
 
 class QuadTree {
   private:
@@ -25,3 +31,5 @@ class QuadTree {
     void addRoute(const vector<array<double,2>> &route,const Ant *a);
     vector<pair<const array<double,2>&,const Ant*>>* reachablePoints(double cx,double cy,double width,double height);
 };
+
+#endif//_QUAD_TREE_HPP_

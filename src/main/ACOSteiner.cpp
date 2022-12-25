@@ -2,6 +2,8 @@
 #include<array>
 #include<functional>
 #include"ACOSteiner.hpp"
+#include"ACOTable.hpp"
+#include"Ant.hpp"
 
 ACOSteiner::ACOSteiner(double min_space,double max_space){
   this->min_space=min_space;

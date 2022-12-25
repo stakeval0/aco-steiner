@@ -3,7 +3,6 @@
 #include<array>
 #include<set>
 #include<functional>
-#include"Ant.hpp"
 using namespace std;
 using ll=long long;
 
