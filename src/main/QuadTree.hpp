@@ -20,6 +20,7 @@ class QuadTree {
     //void addPoint(const array<double,2> &object,const Ant *a);// array<double,2>を追加する
   public:
     static const uint MASK_X=0x55555555,MASK_Y=MASK_X<<1;
+    QuadTree(double width, double height);
     QuadTree(double width, double height, int level);
     void addRoute(const vector<array<double,2>> &route,const Ant *a);
     vector<pair<const array<double,2>&,const Ant*>>* reachablePoints(double cx,double cy,double width,double height);

@@ -17,22 +17,33 @@ static uint mortonJustInDepth(uint morton,uint depth){
   return morton&~(0x3<<(sizeof(uint)*8-2*depth));
 }
 
-static uint moveToParentMortonCenter(uint morton,uint move_depth,uint mask_xy){
+static uint moveParentMortonToCenter(uint morton,uint move_depth,uint mask_xy){
   uint depth_bit=(morton>>(sizeof(uint)-move_depth*2))&0x3;
   bool x=!(depth_bit&1),y=!(depth_bit&2);
   uint direct_mask=x*QuadTree::MASK_X^y*QuadTree::MASK_Y;//それぞれの軸方向どちらに寄るか
   return (morton&~(mask_xy>>move_depth*2))^(direct_mask&mask_xy>>2*move_depth);
 }
 
+static void pushNewMortonArea(stack<array<uint,3>> &s,uint left_up_morton,uint right_bottom_morton){
+  array<uint,3>tmp;
+  tmp[0]=left_up_morton;tmp[1]=right_bottom_morton;
+  tmp[2]=mortonDepth(tmp[0],tmp[1]);
+  s.push(tmp);
+}
+
 //TODO: 後でlevelを消す
 // 4分木のモデル
 QuadTree::QuadTree(double width, double height, int level) {
-  if(level>sizeof(ushort)){fprintf(stderr,"QuadTree: level is too big.\n");exit(EXIT_FAILURE);}
+  if(level>sizeof(ushort)*8){fprintf(stderr,"QuadTree: level is too big.\n");exit(EXIT_FAILURE);}
   this->width=ceil(width);
   this->height=ceil(height);
   this->level=level;
   this->unit_width=this->width/(double)(1<<this->level);
   this->unit_height=this->height/(double)(1<<this->level);
+}
+
+QuadTree::QuadTree(double width,double height){
+  QuadTree(width,height,sizeof(uint)*8/2);
 }
 
 void QuadTree::addRoute(const vector<array<double,2>> &route,const Ant *a){
@@ -63,25 +74,50 @@ vector<pair<const array<double,2>&,const Ant*>>* QuadTree::reachablePoints(doubl
     uint next_depth=tmp[2]+1;
     uint p1_masked_x=tmp[0]&MASK_X,p1_masked_y=tmp[0]&MASK_Y;
     uint p2_masked_x=tmp[1]&MASK_X,p2_masked_y=tmp[1]&MASK_Y;
-    if((tmp[0]^tmp[1])>>(sizeof(uint)*8-(tmp[2]+1)*2)==0x3){//FIXME: ここ全体が未だ駄目。
-      uint tmp_p;
-      s.push({mortonInDepth(tmp[1],next_depth),tmp[1],next_depth});//11
-      s.push({
-        p1_masked_x^(MASK_X&(mortonInDepth(p2_masked_y,tmp[2])^((uint)0x2<<(sizeof(uint)-2*next_depth)))),
-        p2_masked_y^(MASK_Y&(mortonInDepth(p1_masked_x,tmp[2])^((uint)0x2<<(sizeof(uint)-2*next_depth)^~(UINT32_MAX>>2*(next_depth+1))))),
-        next_depth
-      });//10
-      s.push({
-        p1_masked_y^(MASK_Y&(mortonInDepth(p2_masked_x,tmp[2])^((uint)0x1<<(sizeof(uint)-2*next_depth)))),
-        p2_masked_x^(MASK_X&(mortonInDepth(p1_masked_y,tmp[2])^((uint)0x1<<(sizeof(uint)-2*next_depth)^~(UINT32_MAX>>2*(next_depth+1))))),
-        next_depth
-      });//01
-      s.push({tmp[0],tmp[0]|(UINT32_MAX>>(next_depth+1)*2),next_depth});//00
+    array<uint,4>current_mortones={
+      tmp[0],p2_masked_x^p1_masked_y,p1_masked_x^p2_masked_y,tmp[1]
+    };
+    if(mortonInDepth(current_mortones[0],tmp[2])==mortonInDepth(current_mortones[1],tmp[2])){
+      //この時探索領域は縦長のように思える
+      pushNewMortonArea(s,
+        moveParentMortonToCenter(current_mortones[2],next_depth,MASK_Y),
+        current_mortones[3]
+      );
+      pushNewMortonArea(s,
+        current_mortones[0],
+        moveParentMortonToCenter(current_mortones[1],next_depth,MASK_Y)
+      );
+    }else if(mortonInDepth(current_mortones[0],tmp[2])==mortonInDepth(current_mortones[2],tmp[2])){
+      //この時探索領域は横長のように思える
+      pushNewMortonArea(s,
+        moveParentMortonToCenter(current_mortones[1],next_depth,MASK_X),
+        current_mortones[3]
+      );
+      pushNewMortonArea(s,
+        current_mortones[0],
+        moveParentMortonToCenter(current_mortones[2],next_depth,MASK_X)
+      );
     }else{
-      s.push({tmp[0],p2_masked_y|mortonInDepth(tmp[0],next_depth),next_depth});
-      s.push({tmp[0],tmp[0]|(UINT32_MAX>>(next_depth+1)*2),next_depth});
+      //この時current_mortonesの要素は全て異なる子領域に存在する
+      pushNewMortonArea(s,
+        moveParentMortonToCenter(current_mortones[3],next_depth,UINT32_MAX),
+        current_mortones[3]
+      );
+      pushNewMortonArea(s,
+        moveParentMortonToCenter(current_mortones[2],next_depth,MASK_Y),
+        moveParentMortonToCenter(current_mortones[2],next_depth,MASK_X)
+      );
+      pushNewMortonArea(s,
+        moveParentMortonToCenter(current_mortones[1],next_depth,MASK_X),
+        moveParentMortonToCenter(current_mortones[1],next_depth,MASK_Y)
+      );
+      pushNewMortonArea(s,
+        current_mortones[0],
+        moveParentMortonToCenter(current_mortones[0],next_depth,UINT32_MAX)
+      );
     }
   }
+  return ret;
 }
 
 //以下でprivate関数
