@@ -3,7 +3,7 @@
 
 ACOTable::ACOTable(){
   //NOTE: 時間経過してもフェロモンの順序関係は変わらないのでこれで良い
-  multiset([this](Ant *a,Ant *b){return a->pheromone(time)>b->pheromone(time);});
+  new (this) multiset([this](Ant *a,Ant *b){return a->pheromone(time)>b->pheromone(time);});
 }
 double ACOTable::costVariance(){
   double sum=0,square_sum=0,temp;

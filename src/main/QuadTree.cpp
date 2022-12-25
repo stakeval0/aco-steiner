@@ -43,7 +43,7 @@ QuadTree::QuadTree(double width, double height, int level) {
 }
 
 QuadTree::QuadTree(double width,double height){
-  QuadTree(width,height,sizeof(uint)*8/2);
+  new (this) QuadTree(width,height,sizeof(uint)*8/2);
 }
 
 void QuadTree::addRoute(const vector<array<double,2>> &route,const Ant *a){
@@ -131,7 +131,7 @@ uint QuadTree::separate(ushort n) {
 }
 
 bool QuadTree::inWorld(double x,double y){
-  if(x>=0&&y>=0&&x<=this->width&&y<=this->height){
+  if(x<0||y<0||x>this->width||y>this->height){
     fprintf(stderr,"QuadTree: Irregular point (%g, %g) was observed.\n",x,y);
     return false;
   }
