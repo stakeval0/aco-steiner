@@ -7,12 +7,12 @@ using namespace std;
 
 int main(void){
   QuadTree qt=QuadTree(100.0,100.0);
-  vector<vector<array<double,2>>>routes(10,vector<array<double,2>>(10));
+  vector<vector<array<double,2>>>routes(100,vector<array<double,2>>(100));
   random_device seed_gen;
   default_random_engine engine(seed_gen());
   uniform_real_distribution<> dist(0,100);
-  for(int i=0;i<10;i++){
-    for(int j=0;j<10;j++){
+  for(int i=0;i<100;i++){
+    for(int j=0;j<100;j++){
       for(int k=0;k<routes[i][j].size();k++){
         double tmp=dist(engine);
         routes[i][j][k]=tmp;

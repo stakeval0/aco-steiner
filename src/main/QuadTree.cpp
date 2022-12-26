@@ -1,5 +1,4 @@
 #include<stack>
-#include<iostream>
 #include"QuadTree.hpp"
 
 //NOTE: 深さの最小値は、最上位2bitが一致しない時に0
