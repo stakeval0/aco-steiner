@@ -1,12 +1,13 @@
 #include<stack>
+#include<iostream>
 #include"QuadTree.hpp"
 
 //NOTE: 深さの最小値は、最上位2bitが一致しない時に0
 static int mortonDepth(uint morton1, uint morton2) {
   uint xclusive_or = morton1 ^ morton2;
   int i;
-  for(i=sizeof(morton1)-2;i>=0&&((xclusive_or>>i)&0x3);i-=2);
-  return (sizeof(morton1)-i+2)/2;
+  for(i=sizeof(morton1)*8-2;i>=0&&!((xclusive_or>>i)&0x3);i-=2);
+  return (sizeof(morton1)*8-i-2)/2;
 }
 
 static uint mortonInDepth(uint morton,uint depth){
@@ -17,11 +18,11 @@ static uint mortonJustInDepth(uint morton,uint depth){
   return morton&~(0x3<<(sizeof(uint)*8-2*depth));
 }
 
-static uint moveParentMortonToCenter(uint morton,uint move_depth,uint mask_xy){
-  uint depth_bit=(morton>>(sizeof(uint)-move_depth*2))&0x3;
+static uint moveToCenterInParentMorton(uint morton,uint fixed_depth,uint mask_xy){
+  uint depth_bit=(morton>>(sizeof(uint)*8-fixed_depth*2))&0x3;
   bool x=!(depth_bit&1),y=!(depth_bit&2);
   uint direct_mask=x*QuadTree::MASK_X^y*QuadTree::MASK_Y;//それぞれの軸方向どちらに寄るか
-  return (morton&~(mask_xy>>move_depth*2))^(direct_mask&mask_xy>>2*move_depth);
+  return (morton&~(mask_xy>>fixed_depth*2))^(direct_mask&mask_xy>>2*fixed_depth);
 }
 
 static void pushNewMortonArea(stack<array<uint,3>> &s,uint left_up_morton,uint right_bottom_morton){
@@ -69,6 +70,7 @@ vector<pair<const array<double,2>&,const Ant*>>* QuadTree::reachablePoints(doubl
     tmp=s.top();s.pop();
     if(tmp[2]>=MAX_DEPTH){
       searchMorton(tmp[0],tmp[2],*ret);
+      //cout<<tmp[0]<<' '<<tmp[1]<<endl;
       continue;
     }
     uint next_depth=tmp[2]+1;
@@ -77,43 +79,43 @@ vector<pair<const array<double,2>&,const Ant*>>* QuadTree::reachablePoints(doubl
     array<uint,4>current_mortones={
       tmp[0],p2_masked_x^p1_masked_y,p1_masked_x^p2_masked_y,tmp[1]
     };
-    if(mortonInDepth(current_mortones[0],tmp[2])==mortonInDepth(current_mortones[1],tmp[2])){
+    if(mortonInDepth(current_mortones[0],next_depth)==mortonInDepth(current_mortones[1],next_depth)){
       //この時探索領域は縦長のように思える
       pushNewMortonArea(s,
-        moveParentMortonToCenter(current_mortones[2],next_depth,MASK_Y),
+        moveToCenterInParentMorton(current_mortones[2],next_depth,MASK_Y),
         current_mortones[3]
       );
       pushNewMortonArea(s,
         current_mortones[0],
-        moveParentMortonToCenter(current_mortones[1],next_depth,MASK_Y)
+        moveToCenterInParentMorton(current_mortones[1],next_depth,MASK_Y)
       );
-    }else if(mortonInDepth(current_mortones[0],tmp[2])==mortonInDepth(current_mortones[2],tmp[2])){
+    }else if(mortonInDepth(current_mortones[0],next_depth)==mortonInDepth(current_mortones[2],next_depth)){
       //この時探索領域は横長のように思える
       pushNewMortonArea(s,
-        moveParentMortonToCenter(current_mortones[1],next_depth,MASK_X),
+        moveToCenterInParentMorton(current_mortones[1],next_depth,MASK_X),
         current_mortones[3]
       );
       pushNewMortonArea(s,
         current_mortones[0],
-        moveParentMortonToCenter(current_mortones[2],next_depth,MASK_X)
+        moveToCenterInParentMorton(current_mortones[2],next_depth,MASK_X)
       );
     }else{
       //この時current_mortonesの要素は全て異なる子領域に存在する
       pushNewMortonArea(s,
-        moveParentMortonToCenter(current_mortones[3],next_depth,UINT32_MAX),
+        moveToCenterInParentMorton(current_mortones[3],next_depth,UINT32_MAX),
         current_mortones[3]
       );
       pushNewMortonArea(s,
-        moveParentMortonToCenter(current_mortones[2],next_depth,MASK_Y),
-        moveParentMortonToCenter(current_mortones[2],next_depth,MASK_X)
+        moveToCenterInParentMorton(current_mortones[2],next_depth,MASK_Y),
+        moveToCenterInParentMorton(current_mortones[2],next_depth,MASK_X)
       );
       pushNewMortonArea(s,
-        moveParentMortonToCenter(current_mortones[1],next_depth,MASK_X),
-        moveParentMortonToCenter(current_mortones[1],next_depth,MASK_Y)
+        moveToCenterInParentMorton(current_mortones[1],next_depth,MASK_X),
+        moveToCenterInParentMorton(current_mortones[1],next_depth,MASK_Y)
       );
       pushNewMortonArea(s,
         current_mortones[0],
-        moveParentMortonToCenter(current_mortones[0],next_depth,UINT32_MAX)
+        moveToCenterInParentMorton(current_mortones[0],next_depth,UINT32_MAX)
       );
     }
   }
@@ -124,8 +126,8 @@ vector<pair<const array<double,2>&,const Ant*>>* QuadTree::reachablePoints(doubl
 
 uint QuadTree::separate(ushort n) {
   uint lln=n,ret=0;
-  for(int i=0;i<sizeof(n)*8/2;i++){
-    ret+=(lln&(ushort)1<<i)<<i;
+  for(int i=0;i<sizeof(n)*8;i++){
+    ret+=(lln&((uint)1<<i))<<i;
   }
   return ret;
 }
@@ -140,17 +142,21 @@ bool QuadTree::inWorld(double x,double y){
 
 uint QuadTree::mortonNumber(double x, double y) {
   //x==this->widthになるとオーバーフローするのでその対策
-  ushort i=(ushort)(min(x/this->unit_width,(double)(1<<this->level)));
-  ushort j=(ushort)(min(y/this->unit_height,(double)(1<<this->level)));
-  return (separate(i) | separate(j) << 1);
+  ushort i=(ushort)(min(x/this->unit_width,(double)((1<<this->level)-1)));
+  ushort j=(ushort)(min(y/this->unit_height,(double)((1<<this->level)-1)));
+  uint ret=(separate(i) | separate(j) << 1);
+  return ret;
 }
 
 void QuadTree::searchMorton(uint morton,int search_depth,vector<pair<const array<double,2>&,const Ant*>> &buf){
-  const uint LOWER_BIT_MAX=UINT32_MAX>>(2*search_depth),MORTON_HIGHER_BIT=morton&~LOWER_BIT_MAX,MORTON_MAX=MORTON_HIGHER_BIT+LOWER_BIT_MAX;
+  const uint LOWER_BIT_MAX=(search_depth<16?UINT32_MAX>>(2*search_depth):0),//ここを3項演算子でない状態でやっていたら何故か値がsearch_depth==16でUINT32_MAXになった
+             MORTON_HIGHER_BIT=morton&~LOWER_BIT_MAX,MORTON_MAX=MORTON_HIGHER_BIT+LOWER_BIT_MAX;
   auto e=this->quad_tree.lower_bound(MORTON_HIGHER_BIT);
-  if(e->first<=MORTON_HIGHER_BIT)++e;
-  for(;e->first<=MORTON_MAX;++e){
-    for(const auto &g:e->second){//NOTE: 本当はsetをbufに詰められる様にした方が早そうだが、簡単なのでこうする
+  //cout<<MORTON_HIGHER_BIT<<":\n";
+  if(e!=this->quad_tree.end()&&e->first<MORTON_HIGHER_BIT)e++;
+  for(;e!=this->quad_tree.end()&&e->first<=MORTON_MAX;e++){
+    //cout<<e->first<<endl;
+    for(const auto &g:e->second){//NOTE: 本当はsetをbufに詰められる様にした方が速そうだが、簡単なのでこうする
       buf.push_back(g);
     }
   }
