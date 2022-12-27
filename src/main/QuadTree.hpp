@@ -13,12 +13,12 @@ class Ant;
 
 class QuadTree {
   private:
-    ushort width;
-    ushort height;
+    double width;
+    double height;
     int level;
     double unit_width;
     double unit_height;
-    map<uint,set<pair<const array<double,2>&,const Ant*>>>quad_tree;
+    map<uint,set<pair<const array<double,2>*,const Ant*>>>quad_tree;
     uint separate(ushort n);
     bool inWorld(double x,double y);
     uint mortonNumber(double x, double y);
@@ -29,7 +29,8 @@ class QuadTree {
     QuadTree(double width, double height);
     QuadTree(double width, double height, int level);
     void addRoute(const vector<array<double,2>> &route,const Ant *a);
-    vector<pair<const array<double,2>&,const Ant*>>* reachablePoints(double cx,double cy,double width,double height);
+    void removeRoute(const vector<array<double,2>> &route,const Ant *a);
+    vector<pair<const array<double,2> &,const Ant*>>* reachablePoints(double cx,double cy,double width,double height);
 };
 
 #endif//_QUAD_TREE_HPP_

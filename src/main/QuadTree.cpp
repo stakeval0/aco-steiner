@@ -35,8 +35,8 @@ static void pushNewMortonArea(stack<array<uint,3>> &s,uint left_up_morton,uint r
 // 4分木のモデル
 QuadTree::QuadTree(double width, double height, int level) {
   if(level>sizeof(ushort)*8){fprintf(stderr,"QuadTree: level is too big.\n");exit(EXIT_FAILURE);}
-  this->width=ceil(width);
-  this->height=ceil(height);
+  this->width=width;
+  this->height=height;
   this->level=level;
   this->unit_width=this->width/(double)(1<<this->level);
   this->unit_height=this->height/(double)(1<<this->level);
@@ -51,7 +51,16 @@ void QuadTree::addRoute(const vector<array<double,2>> &route,const Ant *a){
     const array<double,2> &point=route[i];
     if(!inWorld(point[0],point[1]))continue;
     int morton_num=mortonNumber(point[0],point[1]);
-    quad_tree[morton_num].insert({point,a});
+    quad_tree[morton_num].emplace(&point,a);
+  }
+}
+
+void QuadTree::removeRoute(const vector<array<double,2>> &route,const Ant *a){
+  for(int i=0;i<route.size();i++){
+    const array<double,2> &point=route[i];
+    if(!inWorld(point[0],point[1]))continue;
+    int morton_num=mortonNumber(point[0],point[1]);
+    quad_tree[morton_num].erase({&point,a});
   }
 }
 
@@ -59,10 +68,11 @@ vector<pair<const array<double,2>&,const Ant*>>* QuadTree::reachablePoints(doubl
   vector<pair<const array<double,2>&,const Ant*>>* ret=new vector<pair<const array<double,2>&,const Ant*>>;
   stack<array<uint,3>>s;//left_up_morton,right_down_morton,depth
   double hw=width/2,hh=height/2;
-  if(!inWorld(cx-hw,cy-hh)||!inWorld(cx+hw,cy+hh))return NULL;//世界も矩形なのでこの二点の確認だけで良い
-  const int MAX_DEPTH=ceil(log2(this->width*this->height/(width*height)));
+  double p1_x=max(cx-hw,0.),p1_y=max(cy-hh,0.),
+         p2_x=min(cx+hw,this->width),p2_y=min(cy+hh,this->height);
+  const int MAX_DEPTH=ceil(log2(this->width*this->height/(width*height))/2);
   array<uint,3>tmp;
-  tmp[0]=mortonNumber(cx-hw,cy-hh);tmp[1]=mortonNumber(cx+hw,cy+hh);
+  tmp[0]=mortonNumber(p1_x,p1_y);tmp[1]=mortonNumber(p2_x,p2_y);
   tmp[2]=mortonDepth(tmp[0],tmp[1]);
   s.push(tmp);
   while(!s.empty()){
@@ -141,8 +151,8 @@ bool QuadTree::inWorld(double x,double y){
 
 uint QuadTree::mortonNumber(double x, double y) {
   //x==this->widthになるとオーバーフローするのでその対策
-  ushort i=(ushort)(min(x/this->unit_width,(double)((1<<this->level)-1)));
-  ushort j=(ushort)(min(y/this->unit_height,(double)((1<<this->level)-1)));
+  ushort i=min((int)(x/this->unit_width),(1<<this->level)-1);
+  ushort j=min((int)(y/this->unit_height),(1<<this->level)-1);
   uint ret=(separate(i) | separate(j) << 1);
   return ret;
 }
@@ -156,7 +166,7 @@ void QuadTree::searchMorton(uint morton,int search_depth,vector<pair<const array
   for(;e!=this->quad_tree.end()&&e->first<=MORTON_MAX;e++){
     //cout<<e->first<<endl;
     for(const auto &g:e->second){//NOTE: 本当はsetをbufに詰められる様にした方が速そうだが、簡単なのでこうする
-      buf.push_back(g);
+      buf.emplace_back(*(g.first),g.second);
     }
   }
 }

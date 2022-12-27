@@ -2,10 +2,19 @@
 #include<vector>
 #include<array>
 #include<random>
+#include<set>
 #include"../main/QuadTree.hpp"
 using namespace std;
 
-int main(void){
+void setTest(){
+  set<pair<int,const array<int,2>*>> s;
+  const array<int,2>hoge={1,2},fuga={1,2};
+  s.insert({1,&hoge});
+  s.erase({1,&fuga});
+  cout<<(s.empty()?"empty":"not empty")<<endl;
+}
+
+void quadTreeTest(){
   QuadTree qt=QuadTree(100.0,100.0);
   vector<vector<array<double,2>>>routes(100,vector<array<double,2>>(100));
   random_device seed_gen;
@@ -21,12 +30,16 @@ int main(void){
     }
     qt.addRoute(routes[i],NULL);
   }
-  auto nodes=qt.reachablePoints(50,50,25,25);
+  auto nodes=qt.reachablePoints(50,50,20,20);
   for(int i=0;i<nodes->size();i++){
     const array<double,2> &p=(*nodes)[i].first;
     printf("%g,%g\n",p[0],p[1]);
   }
   delete(nodes);
+}
+
+int main(void){
+  quadTreeTest();
   //cout<<(uint)(UINT32_MAX>>32)<<endl;
   return 0;
 }
