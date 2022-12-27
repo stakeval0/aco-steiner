@@ -1,8 +1,6 @@
 #ifndef _ACO_STEINER_HPP_
 #define _ACO_STEINER_HPP_
 #include<array>
-#include<queue>
-#include<functional>
 using namespace std;
 using ll =long long;
 

@@ -1,4 +1,6 @@
+#include<iostream>
 #include<stack>
+#include<cmath>
 #include"QuadTree.hpp"
 
 //NOTE: 深さの最小値は、最上位2bitが一致しない時に0
@@ -10,7 +12,7 @@ static int mortonDepth(uint morton1, uint morton2) {
 }
 
 static uint mortonInDepth(uint morton,uint depth){
-  return morton&~(UINT32_MAX>>depth*2);
+  return morton&~(__UINT32_MAX__>>depth*2);
 }
 
 static uint mortonJustInDepth(uint morton,uint depth){
@@ -111,7 +113,7 @@ vector<pair<const array<double,2>&,const Ant*>>* QuadTree::reachablePoints(doubl
     }else{
       //この時current_mortonesの要素は全て異なる子領域に存在する
       pushNewMortonArea(s,
-        moveToCenterInParentMorton(current_mortones[3],next_depth,UINT32_MAX),
+        moveToCenterInParentMorton(current_mortones[3],next_depth,__UINT32_MAX__),
         current_mortones[3]
       );
       pushNewMortonArea(s,
@@ -124,7 +126,7 @@ vector<pair<const array<double,2>&,const Ant*>>* QuadTree::reachablePoints(doubl
       );
       pushNewMortonArea(s,
         current_mortones[0],
-        moveToCenterInParentMorton(current_mortones[0],next_depth,UINT32_MAX)
+        moveToCenterInParentMorton(current_mortones[0],next_depth,__UINT32_MAX__)
       );
     }
   }
@@ -158,7 +160,7 @@ uint QuadTree::mortonNumber(double x, double y) {
 }
 
 void QuadTree::searchMorton(uint morton,int search_depth,vector<pair<const array<double,2>&,const Ant*>> &buf){
-  const uint LOWER_BIT_MAX=(search_depth<16?UINT32_MAX>>(2*search_depth):0),//ここを3項演算子でない状態でやっていたら何故か値がsearch_depth==16でUINT32_MAXになった
+  const uint LOWER_BIT_MAX=(search_depth<16?__UINT32_MAX__>>(2*search_depth):0),//ここを3項演算子でない状態でやっていたら何故か値がsearch_depth==16で__UINT32_MAX__になった
              MORTON_HIGHER_BIT=morton&~LOWER_BIT_MAX,MORTON_MAX=MORTON_HIGHER_BIT+LOWER_BIT_MAX;
   auto e=this->quad_tree.lower_bound(MORTON_HIGHER_BIT);
   //cout<<MORTON_HIGHER_BIT<<":\n";

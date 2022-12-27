@@ -1,6 +1,3 @@
-#include<iostream>
-#include<array>
-#include<functional>
 #include"Ant.hpp"
 #include"ACOSteiner.hpp"
 #include"ACOTable.hpp"

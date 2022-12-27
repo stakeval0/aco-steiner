@@ -3,9 +3,7 @@
 #include<vector>
 #include<array>
 #include<map>
-#include<bitset>
 #include<set>
-#include<cmath>
 //#include"Ant.hpp"
 using namespace std;
 
