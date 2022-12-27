@@ -17,8 +17,10 @@ class Ant{
     void searchNewRoute(const ACOSteiner &w,ll current_time);
   public:
     Ant(const ACOSteiner &world,bool init);
-    double pheromone(ll current_time);
-    double getAllCost();
+    double pheromone(ll current_time) const;
+    double getAllCost() const;
+    const pair<int,vector<array<double,2>>>* getRoute(int index) const;
+    int numOfPoints() const;
     //static Ant* searchNewRoute(ACOSteiner world);
 };
 

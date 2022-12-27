@@ -14,11 +14,10 @@ class ACOTable : public multiset<Ant*,function<bool(Ant*,Ant*)>> {
     ll time=0,max_size=16;
   public:
     ACOTable();
-    Ant selectAnt();
     void setTime(ll time);
     void setTableSize(ll size);
     double costVariance();
-    void insert(Ant *a);
+    Ant* dropout();
     void updatePheromone();
     //double pheromoneSum() const;//出来ればupdatePheromone()時に計算して変数として保存しておきたい
 };

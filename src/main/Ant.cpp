@@ -25,6 +25,11 @@ Ant::Ant(const ACOSteiner &world,bool init){
   if(!init)searchNewRoute(world,this->birth_time);
 }
 
+const pair<int,vector<array<double,2>>>* Ant::getRoute(int index) const {
+  return &(this->path[index]);
+}
+int Ant::numOfPoints() const {return this->path.size();}
+
 /* Ant* Ant::searchNewRoute(ACOSteiner world){
    Ant *ret=new Ant();
  } */

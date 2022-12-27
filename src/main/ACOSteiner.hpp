@@ -8,14 +8,19 @@ using ll =long long;
 
 class Ant;
 class ACOTable;
+class QuadTree;
 
 class ACOSteiner{
   protected:
     ll time=0;
     double min_space,max_space;
+    vector<array<double,2>> points;
+    array<double,2> points_offset;
     ACOTable* table;
+    vector<QuadTree> qtworld;
   public:
-    ACOSteiner(double min_space,double max_space);
+    ACOSteiner(const vector<array<double,2>> &points);
+    //~ACOSteiner();//TODO: 実装!
     void search();
     ll getTime() const;
     void setMinSpace(double d);
