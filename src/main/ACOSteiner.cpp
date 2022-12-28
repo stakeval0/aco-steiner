@@ -18,7 +18,9 @@ ACOSteiner::ACOSteiner(const vector<array<double,2>> &points){
     this->points[i][1]=points[i][1]-ymin;
   }
   double width=xmax-xmin,height=ymax-ymin;
-  for(int i=0;i<points.size()-1;i++){
+  int num_of_qt=points.size()-1;
+  this->qtworld.reserve(num_of_qt);
+  for(int i=0;i<num_of_qt;i++){
     this->qtworld.emplace_back(width,height);
   }
   double diagnoal=sqrt(width*width+height*height);
