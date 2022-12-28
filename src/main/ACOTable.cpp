@@ -22,5 +22,6 @@ Ant* ACOTable::dropout(){
   this->erase(target);
   return ret;
 }
-void ACOTable::setTime(ll time){this->time=time;}
-void ACOTable::setTableSize(ll size){this->max_size=size;}
+
+inline void ACOTable::setTime(ll time){this->time=time;}
+inline void ACOTable::setTableSize(ll size){this->max_size=size;}

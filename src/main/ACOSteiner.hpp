@@ -14,19 +14,21 @@ class ACOSteiner{
     double min_space,max_space;
     vector<array<double,2>> points;
     array<double,2> points_offset;
-    ACOTable* table;
+    ACOTable table;
     vector<QuadTree> qtworld;
+    void countTime();
   public:
     ACOSteiner(const vector<array<double,2>> &points);
     //~ACOSteiner();//TODO: 実装!
     void search();
     ll getTime() const;
-    void setMinSpace(double d);
-    void setMaxSpace(double d);
+    void setMinDistance(double d);
+    void setMaxDistance(double d);
     double getMinSpace() const;
     double getMaxSpace() const;
     void setTableSize(ll size);
-    const ACOTable* getACOTable() const;
+    const ACOTable& getACOTable() const;
+    const QuadTree& getQuadTree(int index) const;
 };
 
 
