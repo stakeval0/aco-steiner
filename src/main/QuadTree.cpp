@@ -36,7 +36,7 @@ static void pushNewMortonArea(stack<array<uint,3>> &s,uint left_up_morton,uint r
 //TODO: 後でlevelを消す
 // 4分木のモデル
 QuadTree::QuadTree(double width, double height, int level) {
-  if(level>sizeof(ushort)*8){fprintf(stderr,"QuadTree: level is too big.\n");exit(EXIT_FAILURE);}
+  if(level>sizeof(ushort)*8){fprintf(stderr,"%s: level is too big.\n",__PRETTY_FUNCTION__);exit(EXIT_FAILURE);}
   this->width=width;
   this->height=height;
   this->level=level;
@@ -145,7 +145,7 @@ uint QuadTree::separate(ushort n) {
 
 bool QuadTree::inWorld(double x,double y){
   if(x<0||y<0||x>this->width||y>this->height){
-    fprintf(stderr,"QuadTree: Irregular point (%g, %g) was observed.\n",x,y);
+    fprintf(stderr,"%s: Irregular point (%g, %g) was observed.\n",__PRETTY_FUNCTION__,x,y);
     return false;
   }
   return true;
