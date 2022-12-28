@@ -28,7 +28,7 @@ void quadTreeTest(){
         cout<<tmp<<(k<routes[i][j].size()-1?',':'\n');
       }
     }
-    qt.addRoute(routes[i],NULL);
+    qt.addRoute(routes[i],nullptr);
   }
   auto nodes=qt.reachablePoints(50,50,20,20);
   for(int i=0;i<nodes->size();i++){

@@ -16,7 +16,7 @@ double ACOTable::costVariance(){
 }
 
 Ant* ACOTable::dropout(){
-  if(this->size()<=this->max_size)return NULL;
+  if(this->size()<=this->max_size)return nullptr;
   auto target=this->begin();
   Ant* ret=*target;
   this->erase(target);
