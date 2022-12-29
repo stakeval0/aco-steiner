@@ -9,7 +9,7 @@ using ll=long long;
 class Ant;
 
 //最良と最悪どちらも取り出したいのでmultiset方式
-class ACOTable : public multiset<Ant*,function<bool(Ant*,Ant*)>> {
+class ACOTable : public multiset<const Ant*,function<bool(const Ant*,const Ant*)>> {
   private:
     ll time=0,max_size=16;
   public:
@@ -17,8 +17,7 @@ class ACOTable : public multiset<Ant*,function<bool(Ant*,Ant*)>> {
     void setTime(ll time);
     void setTableSize(ll size);
     double costVariance();
-    Ant* dropout();
-    void updatePheromone();
+    const Ant* dropout();
     //double pheromoneSum() const;//出来ればupdatePheromone()時に計算して変数として保存しておきたい
 };
 
