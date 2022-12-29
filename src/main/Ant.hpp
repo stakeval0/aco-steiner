@@ -3,6 +3,7 @@
 #include<vector>
 #include<array>
 #include<cmath>
+#include<memory>
 using namespace std;
 using ll=long long;
 
@@ -12,22 +13,18 @@ class Ant{
   protected:
     ll birth_time;
     double all_cost;
-    vector<pair<int,vector<array<double,2>>>>path;//pair<int,vec>のintで戻るノード数を管理する
-    static double (*object_function)(const array<double,2> &,const array<double,2> &);//目的関数
+    vector<pair<int,shared_ptr<vector<array<double,2>>>>>path;//pair<int,vec>のintで戻るノード数を管理する
+    void constructOneRoute(const ACOSteiner &w,const Ant *base_ant,int index);
     void searchNewRoute(const ACOSteiner &w,ll current_time);
   public:
     Ant(const ACOSteiner &world,bool init);
     double pheromone(ll current_time) const;
     double getAllCost() const;
-    const pair<int,vector<array<double,2>>>* getRoute(int index) const;
+    int getBackTimesOnRoute(int index) const;
+    const vector<array<double,2>>& getRelayPointsOnRoute(int index) const;
+    const tuple<int,const vector<array<double,2>> &> getRoute(int index) const;//互換性のために残すが非推奨
     int numOfPoints() const;
     //static Ant* searchNewRoute(ACOSteiner world);
 };
-
-static double euclid(const array<double,2> &a,const array<double,2> &b){
-  double dx=b[0]-a[0],dy=b[1]-a[1];
-  return sqrt(dx*dx+dy*dy);
-}
-double (*Ant::object_function)(const array<double,2> &,const array<double,2> &)=&euclid;
 
 #endif//_ANT_HPP_
