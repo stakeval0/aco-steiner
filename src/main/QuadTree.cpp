@@ -160,7 +160,7 @@ uint QuadTree::mortonNumber(double x, double y) {
 }
 
 void QuadTree::searchMorton(uint morton,int search_depth,vector<pair<const array<double,2>&,const Ant*>> &buf){
-  const uint LOWER_BIT_MAX=(search_depth<16?__UINT32_MAX__>>(2*search_depth):0),//ここを3項演算子でない状態でやっていたら何故か値がsearch_depth==16で__UINT32_MAX__になった
+  const uint LOWER_BIT_MAX=__UINT32_MAX__>>(2*search_depth),//ここをbitsetに付いてきたUINT32_MAXにして、3項演算子でない状態でやっていたら何故か値がsearch_depth==16でUINT32_MAXになった
              MORTON_HIGHER_BIT=morton&~LOWER_BIT_MAX,MORTON_MAX=MORTON_HIGHER_BIT+LOWER_BIT_MAX;
   auto e=this->quad_tree.lower_bound(MORTON_HIGHER_BIT);
   //cout<<MORTON_HIGHER_BIT<<":\n";
