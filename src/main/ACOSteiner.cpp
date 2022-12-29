@@ -1,3 +1,4 @@
+#include<iostream>
 #include"Ant.hpp"
 #include"ACOSteiner.hpp"
 #include"ACOTable.hpp"
@@ -5,7 +6,18 @@
 
 const double MIN_SPACE_RATIO_DEFAULT=1.0/100,MAX_SPACE_RATIO_DEFAULT=1.0/10;
 
+static double euclid(const array<double,2> &a,const array<double,2> &b){
+  double dx=b[0]-a[0],dy=b[1]-a[1];
+  return sqrt(dx*dx+dy*dy);
+}
+
+static inline void printArgumentErrorMessage(const char *func_name,const char *correct_argument_condition){
+  fprintf(stderr,"%s: argument needs to be %s.\n",func_name,correct_argument_condition);
+}
+
 ACOSteiner::ACOSteiner(const vector<array<double,2>> &points){
+  this->table=new ACOTable();
+  this->cost_function=euclid;
   double xmin=0,xmax=0,ymin=0,ymax=0;
   for(int i=0;i<points.size();i++){
     xmin=min(xmin,points[i][0]);xmax=max(xmax,points[i][0]);
@@ -23,37 +35,85 @@ ACOSteiner::ACOSteiner(const vector<array<double,2>> &points){
     this->qtworld.emplace_back(width,height);
   }
   double diagnoal=sqrt(width*width+height*height);
-  this->min_space=diagnoal*MIN_SPACE_RATIO_DEFAULT;
-  this->max_space=diagnoal*MAX_SPACE_RATIO_DEFAULT;
+  this->min_distance=diagnoal*MIN_SPACE_RATIO_DEFAULT;
+  this->max_distance=diagnoal*MAX_SPACE_RATIO_DEFAULT;
+}
+
+ACOSteiner::~ACOSteiner(){
+  delete this->table;//ACOTableをunique_ptrにすれば書かなくて良くなる
 }
 
 void ACOSteiner::search(){
   Ant *new_ant=new Ant(*this,false);
-  this->table.insert(new_ant);
+  this->table->insert(new_ant);
   //4分木の世界へ登録
   for(int i=0;i<new_ant->numOfPoints();i++){
-    this->qtworld[i].addRoute(new_ant->getRoute(i)->second,new_ant);
+    this->qtworld[i].addRoute(new_ant->getRelayPointsOnRoute(i),new_ant);
   }
   //最悪解の削除
-  Ant *dropout_ant=this->table.dropout();
+  const Ant *dropout_ant=this->table->dropout();
   if(dropout_ant){
     for(int i=0;i<dropout_ant->numOfPoints();i++){
-      this->qtworld[i].removeRoute(dropout_ant->getRoute(i)->second,dropout_ant);
+      this->qtworld[i].removeRoute(dropout_ant->getRelayPointsOnRoute(i),dropout_ant);
     }
+    //設計段階でここでdeleteすれば必要十分である事が証明されているが、後でスマートポインタにしても良いかも知れない
     delete dropout_ant;
   }
   countTime();
 }
 
+inline void ACOSteiner::setCostFunction(const function<double(const array<double,2> &,const array<double,2> &)> &f){
+  this->cost_function=f;
+}
+
+inline double ACOSteiner::calcCost(const array<double,2> &p1,const array<double,2> &p2) const {return this->cost_function(p1,p2);}
+
+void ACOSteiner::setMinDistance(double d){
+  if(d>=0&&d<this->max_distance){
+    this->min_distance=d;return;
+  }
+  printArgumentErrorMessage(__PRETTY_FUNCTION__,"no less than 0 and more than max_distance");
+}
+
+void ACOSteiner::setMaxDistance(double d){
+  if(d>0||d>this->min_distance){
+    this->max_distance=d;return;
+  }
+  printArgumentErrorMessage(__PRETTY_FUNCTION__,"more than 0 and min_distance");
+}
+
+void ACOSteiner::setMutationProbability(double value){
+  if(value>=0&&value<=1){
+    this->mutation_probability=value;return;
+  }
+  printArgumentErrorMessage(__PRETTY_FUNCTION__,"value from 0.0 to 1.0");
+}
+
+void ACOSteiner::setEvaporationCofficient(double value){
+  if(value>=0&&value<=1){
+    this->evaporation_cofficient=value;return;
+  }
+  printArgumentErrorMessage(__PRETTY_FUNCTION__,"value from 0.0 to 1.0");
+}
+
+void ACOSteiner::setBasicMoveRatio(double value){
+  if(value!=0){
+    this->basic_move_ratio=value;return;
+  }
+  printArgumentErrorMessage(__PRETTY_FUNCTION__,"not 0");
+}
+
 inline ll ACOSteiner::getTime() const {return this->time;}
-inline void ACOSteiner::setMinDistance(double d){this->min_space=d;}
-inline void ACOSteiner::setMaxDistance(double d){this->max_space=d;}
-inline double ACOSteiner::getMinSpace() const {return this->min_space;}
-inline double ACOSteiner::getMaxSpace() const {return this->max_space;}
-inline void ACOSteiner::setTableSize(ll size){this->table.setTableSize(size);}
-inline const ACOTable& ACOSteiner::getACOTable() const {return this->table;}
+inline double ACOSteiner::getMinDistance() const {return this->min_distance;}
+inline double ACOSteiner::getMaxDistance() const {return this->max_distance;}
+inline double ACOSteiner::getMutationProbability() const {return this->mutation_probability;}
+inline double ACOSteiner::getEvaporationCofficient() const {return this->evaporation_cofficient;}
+inline double ACOSteiner::getBasicMoveRatio() const {return this->basic_move_ratio;}
+
+inline void ACOSteiner::setTableSize(ll size){this->table->setTableSize(size);}
+inline const ACOTable& ACOSteiner::getACOTable() const {return *this->table;}
 inline const QuadTree& ACOSteiner::getQuadTree(int index) const {return this->qtworld[index];}
 
 //以下でprivate関数
 
-inline void ACOSteiner::countTime(){this->table.setTime(++this->time);}
+inline void ACOSteiner::countTime(){this->table->setTime(++this->time);}
