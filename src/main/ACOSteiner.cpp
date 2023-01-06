@@ -6,7 +6,7 @@
 #include"ACOTable.hpp"
 #include"QuadTree.hpp"
 
-const double MIN_SPACE_RATIO_DEFAULT=1.0/100,MAX_SPACE_RATIO_DEFAULT=1.0/10;
+constexpr double MIN_SPACE_RATIO_DEFAULT=1.0/100,MAX_SPACE_RATIO_DEFAULT=1.0/10;
 
 static inline void printArgumentErrorMessage(const char *func_name,const char *correct_argument_condition){
   fprintf(stderr,"%s: argument needs to be %s.\n",func_name,correct_argument_condition);
