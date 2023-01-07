@@ -8,6 +8,11 @@ using ll=long long;
 
 class Ant;
 
+enum class ACOTableColumn{
+  COST,
+  PHEROMONE,
+};
+
 //最良と最悪どちらも取り出したいのでmultiset方式
 class ACOTable : public multiset<const Ant*,function<bool(const Ant*,const Ant*)>> {
   private:
@@ -16,8 +21,11 @@ class ACOTable : public multiset<const Ant*,function<bool(const Ant*,const Ant*)
     ACOTable();
     void setCapacity(ll size);
     ll getCapacity() const;
-    double costVariance() const;
     const Ant* dropout();
+    double sum(ACOTableColumn target) const;
+    double mean(ACOTableColumn target) const;
+    double variance(ACOTableColumn target) const;
+    double stdev(ACOTableColumn target) const;
     //double pheromoneSum() const;//出来ればupdatePheromone()時に計算して変数として保存しておきたい
 };
 
