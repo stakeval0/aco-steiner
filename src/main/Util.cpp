@@ -12,6 +12,47 @@ void rotate(array<double,2> &v,double theta){
   v[1]=V[0]*sin(theta)+V[1]*cos(theta);
 }
 
+inline array<double,2>& operator+=(array<double,2> &v,double d){
+  v[0]+=d;v[1]+=d;
+  return v;
+}
+
+inline array<double,2>& operator+=(array<double,2> &v1,const array<double,2> &v2){
+  v1[0]+=v2[0];v1[1]+=v2[0];
+  return v1;
+}
+
+inline array<double,2>& operator-=(array<double,2> &v,double d){
+  v[0]-=d;v[1]-=d;
+  return v;
+}
+
+inline array<double,2>& operator-=(array<double,2> &v1,const array<double,2> &v2){
+  v1[0]-=v2[0];v1[1]-=v2[0];
+  return v1;
+}
+
+inline array<double,2>& operator*=(array<double,2> &v,double d){
+  v[0]*=d;v[1]*=d;
+  return v;
+}
+
+inline array<double,2>& operator*=(array<double,2> &v1,const array<double,2> &v2){
+  v1[0]*=v2[0];v1[1]*=v2[0];
+  return v1;
+}
+
+inline array<double,2>& operator/=(array<double,2> &v,double d){
+  v[0]/=d;v[1]/=d;
+  return v;
+}
+
+inline array<double,2>& operator/=(array<double,2> &v1,const array<double,2> &v2){
+  v1[0]/=v2[0];v1[1]/=v2[0];
+  return v1;
+}
+
+
 array<double, 2> operator+(const array<double, 2>& v, double d) {
   return {v[0]+d,v[1]+d};
 }
