@@ -74,22 +74,18 @@ void Ant::addRandVecToOneRoute(const ACOSteiner &world, const Ant *base_ant,
   const auto &START_POINT=world.getConnectPoint(index);
   const auto &BASE_ROUTE=*(base_ant->path[index].second);
   auto &target_route=*(this->path[index].second);
-  /* double move_standard_deviation=
-      base_ant->allCost() * world.getBasicMoveRatio() *
-      (TABLE.costVariance() +
-      (random_engine()>=world.getMutationProbability())||TABLE.size()<TABLE.getCapacity()); */
+  uniform_real_distribution<> uniform_unit_dist(0,1);
   //標準偏差を掛けると発散する危険があるので以下のようにする。
-  //double move_standard_deviation=base_ant->allCost()*world.getBasicMoveRatio();
   const double move_standard_deviation=moveStandardDeviation(
     TABLE.mean(ACOTableColumn::COST),
     TABLE.stdev(ACOTableColumn::COST),
-    random_engine()>=world.getMutationProbability()||TABLE.size()<TABLE.getCapacity()
+    uniform_unit_dist(random_engine)>=world.getMutationProbability()||
+      TABLE.size()<TABLE.getCapacity()
   );
   normal_distribution<> dist_norm(0,move_standard_deviation);
-  uniform_real_distribution<> dist_theta(0,2*M_PI);
   const double randvec_norm=dist_norm(random_engine);
   array<double,2> base_random_vec{randvec_norm,0};
-  rotate(base_random_vec,dist_theta(random_engine));
+  rotate(base_random_vec,2*M_PI*uniform_unit_dist(random_engine));
   const int add_main_target=random_engine()%target_route.size();
   const int arched_add_range=(random_engine()%(target_route.size()/2))*2+1;//奇数にしたい
   const int add_start_index=max(0,add_main_target-arched_add_range);
