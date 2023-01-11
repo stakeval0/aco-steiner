@@ -1,9 +1,12 @@
 #include<cmath>
 #include"Util.hpp"
 
-double euclid(const array<double,2> &a,const array<double,2> &b){
-  double dx=b[0]-a[0],dy=b[1]-a[1];
-  return sqrt(dx*dx+dy*dy);
+double abs(const array<double,2> &v){
+  return sqrt(v[0]*v[0]+v[1]*v[1]);
+}
+
+inline double euclid(const array<double,2> &a,const array<double,2> &b){
+  return abs(a-b);
 }
 
 void rotate(array<double,2> &v,double theta){
@@ -100,6 +103,11 @@ double dot(const array<double, 2>& v1, const array<double, 2>& v2) {
 
 double cross(const array<double, 2>& v1, const array<double, 2>& v2) {
   return v1[0]*v2[1]-v1[1]*v2[0];
+}
+
+template<class T>
+T mean(const T &a,const T &b){
+  return (a+b)/2;
 }
 
 //NOTE: 出典はhttps://zenn.dev/ymd_h/articles/e90ad8ad40a6dd
