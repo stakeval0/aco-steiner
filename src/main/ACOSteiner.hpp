@@ -2,12 +2,14 @@
 #define _ACO_STEINER_HPP_
 #include<array>
 #include<functional>
+#include"QuadTree.hpp"
 using namespace std;
 using ll =long long;
 
 class Ant;
 class ACOTable;
-class QuadTree;
+
+using QuadTreeAnt=QuadTree<const Ant*>;
 
 class ACOSteiner{
   protected:
@@ -18,7 +20,7 @@ class ACOSteiner{
     vector<array<double,2>> points;//NOTE: constは掛けられないが実質const
     array<double,2> points_offset;
     ACOTable *table;
-    vector<QuadTree> qtworld;
+    vector<QuadTreeAnt> qtworld;
     function<double(const array<double,2> &,const array<double,2> &)> cost_function;
     void countTime();
   public:
@@ -43,7 +45,7 @@ class ACOSteiner{
     double getBasicMoveRatio() const;
     ll getTableCapacity() const;
     const ACOTable& getACOTable() const;
-    const QuadTree& getQuadTree(int index) const;
+    const QuadTreeAnt& getQuadTreeAnt(int index) const;
 };
 
 #endif//_ACO_STEINER_HPP_

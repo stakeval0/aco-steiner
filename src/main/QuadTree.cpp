@@ -3,6 +3,8 @@
 #include<cmath>
 #include"QuadTree.hpp"
 
+static constexpr uint MASK_X=0x55555555,MASK_Y=MASK_X<<1;
+
 //NOTE: 深さの最小値は、最上位2bitが一致しない時に0
 static int mortonDepth(uint morton1, uint morton2) {
   uint xclusive_or = morton1 ^ morton2;
@@ -22,7 +24,7 @@ static uint mortonJustInDepth(uint morton,uint depth){
 static uint moveToCenterInParentMorton(uint morton,uint fixed_depth,uint mask_xy){
   uint depth_bit=(morton>>(sizeof(uint)*8-fixed_depth*2))&0x3;
   bool x=!(depth_bit&1),y=!(depth_bit&2);
-  uint direct_mask=x*QuadTree::MASK_X^y*QuadTree::MASK_Y;//それぞれの軸方向どちらに寄るか
+  uint direct_mask=x*MASK_X^y*MASK_Y;//それぞれの軸方向どちらに寄るか
   return (morton&~(mask_xy>>fixed_depth*2))^(direct_mask&mask_xy>>2*fixed_depth);
 }
 
@@ -35,7 +37,8 @@ static void pushNewMortonArea(stack<array<uint,3>> &s,uint left_up_morton,uint r
 
 //TODO: 後でlevelを消す
 // 4分木のモデル
-QuadTree::QuadTree(double width, double height, int level) {
+template<class T>
+QuadTree<T>::QuadTree(double width, double height, int level) {
   if(level>sizeof(ushort)*8){fprintf(stderr,"%s: level is too big.\n",__PRETTY_FUNCTION__);exit(EXIT_FAILURE);}
   this->width=width;
   this->height=height;
@@ -44,11 +47,13 @@ QuadTree::QuadTree(double width, double height, int level) {
   this->unit_height=this->height/(double)(1<<this->level);
 }
 
-QuadTree::QuadTree(double width,double height){
+template<class T>
+QuadTree<T>::QuadTree(double width,double height){
   new (this) QuadTree(width,height,sizeof(uint)*8/2);
 }
 
-void QuadTree::addRoute(const vector<array<double,2>> &route,const Ant *a){
+template<class T>
+void QuadTree<T>::addRoute(const vector<array<double,2>> &route,T a){
   for(int i=0;i<route.size();i++){
     const array<double,2> &point=route[i];
     if(!inWorld(point[0],point[1]))continue;
@@ -57,7 +62,8 @@ void QuadTree::addRoute(const vector<array<double,2>> &route,const Ant *a){
   }
 }
 
-void QuadTree::removeRoute(const vector<array<double,2>> &route,const Ant *a){
+template<class T>
+void QuadTree<T>::removeRoute(const vector<array<double,2>> &route,T a){
   for(int i=0;i<route.size();i++){
     const array<double,2> &point=route[i];
     if(!inWorld(point[0],point[1]))continue;
@@ -66,8 +72,9 @@ void QuadTree::removeRoute(const vector<array<double,2>> &route,const Ant *a){
   }
 }
 
-vector<pair<const array<double,2>&,const Ant*>>* QuadTree::reachablePoints(double cx,double cy,double width,double height){
-  vector<pair<const array<double,2>&,const Ant*>>* ret=new vector<pair<const array<double,2>&,const Ant*>>;
+template<class T>
+vector<pair<const array<double,2>&,T>>* QuadTree<T>::reachablePoints(double cx,double cy,double width,double height){
+  vector<pair<const array<double,2>&,T>>* ret=new vector<pair<const array<double,2>&,T>>;
   stack<array<uint,3>>s;//left_up_morton,right_down_morton,depth
   double hw=width/2,hh=height/2;
   double p1_x=max(cx-hw,0.),p1_y=max(cy-hh,0.),
@@ -135,7 +142,8 @@ vector<pair<const array<double,2>&,const Ant*>>* QuadTree::reachablePoints(doubl
 
 //以下でprivate関数
 
-uint QuadTree::separate(ushort n) {
+template<class T>
+uint QuadTree<T>::separate(ushort n) {
   uint lln=n,ret=0;
   for(int i=0;i<sizeof(n)*8;i++){
     ret+=(lln&((uint)1<<i))<<i;
@@ -143,7 +151,8 @@ uint QuadTree::separate(ushort n) {
   return ret;
 }
 
-bool QuadTree::inWorld(double x,double y){
+template<class T>
+bool QuadTree<T>::inWorld(double x,double y){
   if(x<0||y<0||x>this->width||y>this->height){
     fprintf(stderr,"%s: Irregular point (%g, %g) was observed.\n",__PRETTY_FUNCTION__,x,y);
     return false;
@@ -151,7 +160,8 @@ bool QuadTree::inWorld(double x,double y){
   return true;
 }
 
-uint QuadTree::mortonNumber(double x, double y) {
+template<class T>
+uint QuadTree<T>::mortonNumber(double x, double y) {
   //x==this->widthになるとオーバーフローするのでその対策
   ushort i=min((int)(x/this->unit_width),(1<<this->level)-1);
   ushort j=min((int)(y/this->unit_height),(1<<this->level)-1);
@@ -159,7 +169,8 @@ uint QuadTree::mortonNumber(double x, double y) {
   return ret;
 }
 
-void QuadTree::searchMorton(uint morton,int search_depth,vector<pair<const array<double,2>&,const Ant*>> &buf){
+template<class T>
+void QuadTree<T>::searchMorton(uint morton,int search_depth,vector<pair<const array<double,2>&,T>> &buf){
   const uint LOWER_BIT_MAX=__UINT32_MAX__>>(2*search_depth),//ここをbitsetに付いてきたUINT32_MAXにして、3項演算子でない状態でやっていたら何故か値がsearch_depth==16でUINT32_MAXになった
              MORTON_HIGHER_BIT=morton&~LOWER_BIT_MAX,MORTON_MAX=MORTON_HIGHER_BIT+LOWER_BIT_MAX;
   auto e=this->quad_tree.lower_bound(MORTON_HIGHER_BIT);
@@ -172,3 +183,8 @@ void QuadTree::searchMorton(uint morton,int search_depth,vector<pair<const array
     }
   }
 }
+
+template class QuadTree<const int>;
+
+class Ant;
+template class QuadTree<const Ant*>;

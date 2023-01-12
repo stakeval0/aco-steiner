@@ -15,7 +15,7 @@ void setTest(){
 }
 
 void quadTreeTest(){
-  QuadTree qt=QuadTree(100.0,100.0);
+  QuadTree<const int> qt(100.0,100.0);
   vector<vector<array<double,2>>>routes(100,vector<array<double,2>>(100));
   random_device seed_gen;
   default_random_engine engine(seed_gen());
@@ -28,14 +28,13 @@ void quadTreeTest(){
         cout<<tmp<<(k<routes[i][j].size()-1?',':'\n');
       }
     }
-    qt.addRoute(routes[i],nullptr);
+    qt.addRoute(routes[i],0);
   }
   auto nodes=qt.reachablePoints(50,50,50,50);
   for(int i=0;i<nodes->size();i++){
     const array<double,2> &p=(*nodes)[i].first;
     printf("%g,%g\n",p[0],p[1]);
   }
-  delete(nodes);
 }
 
 int main(void){

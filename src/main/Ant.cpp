@@ -40,31 +40,6 @@ void Ant::constructFirstAnt(const ACOSteiner &world){
   //TODO: 初期の蟻の実装!
 }
 
-//乱数を加える方向に進むか
-//TODO: これだと経路の進行方向か、乱数を加える方向か分からないので、良い名前を考えたい
-enum class PosRelationFB{
-  FORWARD,
-  IN,
-  BACK
-};
-
-enum class PosRelationLR{
-  LEFT,
-  IN,
-  RIGHT
-};
-
-static pair<PosRelationLR,PosRelationFB> posAgainstQuadrilateral(v2d point,
-                                                                 v2d base_left,
-                                                                 v2d base_right,
-                                                                 v2d moved_left,
-                                                                 v2d moved_right){
-  PosRelationLR pos_lr;
-  bool left=cross(moved_left-base_left,point-base_left)>=0;//NOTE: 等号の時はそれを接合点にしたい
-  bool right=cross(moved_right-base_right,point-base_right)<=0;
-  //TODO: 実装!
-}
-
 void Ant::searchNewRoute(const ACOSteiner &world,ll current_time){
   const ACOTable &TABLE=world.getACOTable();
   double pheromone_sum=TABLE.sum(ACOTableColumn::PHEROMONE);
@@ -95,7 +70,7 @@ void Ant::addRandVecToOneRoute(const ACOSteiner &world, const Ant *base_ant,
                                const int index) {
   this->path[index].second.reset(new vector<v2d>);
   const ACOTable &TABLE=world.getACOTable();
-  const QuadTree &QT=world.getQuadTree(index);
+  const QuadTreeAnt &QT=world.getQuadTreeAnt(index);
   const auto &START_POINT=world.getConnectPoint(index);
   const auto &BASE_ROUTE=*(base_ant->path[index].second);
   auto &target_route=*(this->path[index].second);
