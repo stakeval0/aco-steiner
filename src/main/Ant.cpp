@@ -6,9 +6,6 @@
 #include"ACOTable.hpp"
 using namespace std;
 
-static random_device seed_gen;
-static default_random_engine random_engine(seed_gen());
-
 Ant::Ant(const ACOSteiner &world) : BIRTH_TIME(world.getTime()),
                                     MIN_DISTANCE(world.getMinDistance()),
                                     MAX_DISTANCE(world.getMaxDistance()) {
@@ -17,16 +14,16 @@ Ant::Ant(const ACOSteiner &world) : BIRTH_TIME(world.getTime()),
   else constructFirstAnt(world);
 }
 
-inline int Ant::getBackTimesOnRoute(int index) const {
-  return this->path[index].first;
-}
+//inline tuple<int,int,double> Ant::getBackTimesOnRoute(int index) const {
+//  return this->path[index].first;
+//}
 
 inline const vector<v2d>& Ant::getRelayPointsOnRoute(int index) const {
   return *(this->path[index].second);
 }
 
-const tuple<int,const vector<v2d> &> Ant::getRoute(int index) const {
-  return forward_as_tuple(this->path[index].first,*(this->path[index].second));
+const pair<tuple<int,int,double>,const vector<v2d> &> Ant::getRoute(int index) const {
+  return {this->path[index].first,*(this->path[index].second)};
 }
 
 inline int Ant::numOfPoints() const {return this->path.size();}
@@ -36,8 +33,36 @@ inline double Ant::pheromone() const {return this->pheromone_v;}
 
 //以下でprivate関数
 
+static random_device seed_gen;
+static default_random_engine random_engine(seed_gen());
+
 void Ant::constructFirstAnt(const ACOSteiner &world){
   //TODO: 初期の蟻の実装!
+}
+
+//乱数を加える方向に進むか
+//TODO: これだと経路の進行方向か、乱数を加える方向か分からないので、良い名前を考えたい
+enum class PosRelationFB{
+  FORWARD,
+  IN,
+  BACK
+};
+
+enum class PosRelationLR{
+  LEFT,
+  IN,
+  RIGHT
+};
+
+static pair<PosRelationLR,PosRelationFB> posAgainstQuadrilateral(v2d point,
+                                                                 v2d base_left,
+                                                                 v2d base_right,
+                                                                 v2d moved_left,
+                                                                 v2d moved_right){
+  PosRelationLR pos_lr;
+  bool left=cross(moved_left-base_left,point-base_left)>=0;//NOTE: 等号の時はそれを接合点にしたい
+  bool right=cross(moved_right-base_right,point-base_right)<=0;
+  //TODO: 実装!
 }
 
 void Ant::searchNewRoute(const ACOSteiner &world,ll current_time){
@@ -92,19 +117,27 @@ void Ant::addRandVecToOneRoute(const ACOSteiner &world, const Ant *base_ant,
   const int original_add_end_index=add_main_target+arched_add_range/2;//NOTE: 本来の中継点の個数を上回ることもある
   const int actual_add_end_index=min((int)BASE_ROUTE.size()-1,original_add_end_index);
   target_route.reserve(BASE_ROUTE.size());
-  for(int i=0;i<add_start_index;i++)properPushBack(target_route,BASE_ROUTE[i]);
+  vector<int> b2t_index_map(BASE_ROUTE.size());
+  for(int i=0;i<add_start_index;i++){
+    properPushBack(target_route,BASE_ROUTE[i]);
+    b2t_index_map[i]=i;
+  }
   //TODO: 接合点の移動を考慮する
   for(int i=add_start_index;i<add_main_target;i++){
     properPushBack(target_route,BASE_ROUTE[i]+base_random_vec*sin(M_PI/2*i/add_main_target));
+    b2t_index_map[i]=target_route.size()-1;
   }
   for(int i=add_main_target;i<=actual_add_end_index;i++){
     properPushBack(
       target_route,
       BASE_ROUTE[i]+base_random_vec*sin(M_PI/2*(1+(double)i/original_add_end_index))
     );
+    b2t_index_map[i]=target_route.size()-1;
   }
-  for(int i=actual_add_end_index+1;i<BASE_ROUTE.size();i++)
+  for(int i=actual_add_end_index+1;i<BASE_ROUTE.size();i++){
     properPushBack(target_route,BASE_ROUTE[i]);
+    b2t_index_map[i]=i;
+  }
 }
 
 void Ant::properPushBack(vector<v2d> &v,const v2d &e){
