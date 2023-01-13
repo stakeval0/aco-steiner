@@ -10,6 +10,7 @@ class Ant;
 
 enum class ACOTableColumn{
   COST,
+  LENGTH,
   PHEROMONE,
 };
 

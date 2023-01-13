@@ -8,7 +8,9 @@ static double (Ant::*findGetter(ACOTableColumn col))() const {
     case ACOTableColumn::PHEROMONE:
       return &Ant::pheromone;
     case ACOTableColumn::COST:
-      return &Ant::allCost;
+      return &Ant::cost;
+    case ACOTableColumn::LENGTH:
+      return &Ant::length;
   }
   __builtin_unreachable();
 }
