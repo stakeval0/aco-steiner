@@ -40,11 +40,11 @@ static void pushNewMortonArea(stack<array<uint,3>> &s,uint left_up_morton,uint r
 template<class T>
 QuadTree<T>::QuadTree(double width, double height, int level) {
   if(level>sizeof(ushort)*8){fprintf(stderr,"%s: level is too big.\n",__PRETTY_FUNCTION__);exit(EXIT_FAILURE);}
-  this->width=width;
-  this->height=height;
+  this->width_v=width;
+  this->height_v=height;
   this->level=level;
-  this->unit_width=this->width/(double)(1<<this->level);
-  this->unit_height=this->height/(double)(1<<this->level);
+  this->unit_width=this->width_v/(double)(1<<this->level);
+  this->unit_height=this->height_v/(double)(1<<this->level);
 }
 
 template<class T>
@@ -73,13 +73,13 @@ void QuadTree<T>::removeRoute(const vector<array<double,2>> &route,T a){
 }
 
 template<class T>
-vector<pair<const array<double,2>&,T>>* QuadTree<T>::reachablePoints(double cx,double cy,double width,double height){
+vector<pair<const array<double,2>&,T>>* QuadTree<T>::reachablePoints(double cx,double cy,double width,double height) const {
   vector<pair<const array<double,2>&,T>>* ret=new vector<pair<const array<double,2>&,T>>;
   stack<array<uint,3>>s;//left_up_morton,right_down_morton,depth
   double hw=width/2,hh=height/2;
   double p1_x=max(cx-hw,0.),p1_y=max(cy-hh,0.),
-         p2_x=min(cx+hw,this->width),p2_y=min(cy+hh,this->height);
-  const int MAX_DEPTH=ceil(log2(this->width*this->height/(width*height))/2);
+         p2_x=min(cx+hw,this->width_v),p2_y=min(cy+hh,this->height_v);
+  const int MAX_DEPTH=ceil(log2(this->width_v*this->height_v/(width*height))/2);
   array<uint,3>tmp;
   tmp[0]=mortonNumber(p1_x,p1_y);tmp[1]=mortonNumber(p2_x,p2_y);
   tmp[2]=mortonDepth(tmp[0],tmp[1]);
@@ -140,10 +140,16 @@ vector<pair<const array<double,2>&,T>>* QuadTree<T>::reachablePoints(double cx,d
   return ret;
 }
 
+template<class T>
+inline double QuadTree<T>::width() const {return this->width_v;}
+
+template<class T>
+inline double QuadTree<T>::height() const {return this->height_v;}
+
 //以下でprivate関数
 
 template<class T>
-uint QuadTree<T>::separate(ushort n) {
+uint QuadTree<T>::separate(ushort n) const {
   uint lln=n,ret=0;
   for(int i=0;i<sizeof(n)*8;i++){
     ret+=(lln&((uint)1<<i))<<i;
@@ -152,8 +158,8 @@ uint QuadTree<T>::separate(ushort n) {
 }
 
 template<class T>
-bool QuadTree<T>::inWorld(double x,double y){
-  if(x<0||y<0||x>this->width||y>this->height){
+bool QuadTree<T>::inWorld(double x,double y) const {
+  if(x<0||y<0||x>this->width_v||y>this->height_v){
     fprintf(stderr,"%s: Irregular point (%g, %g) was observed.\n",__PRETTY_FUNCTION__,x,y);
     return false;
   }
@@ -161,7 +167,7 @@ bool QuadTree<T>::inWorld(double x,double y){
 }
 
 template<class T>
-uint QuadTree<T>::mortonNumber(double x, double y) {
+uint QuadTree<T>::mortonNumber(double x, double y)  const {
   //x==this->widthになるとオーバーフローするのでその対策
   ushort i=min((int)(x/this->unit_width),(1<<this->level)-1);
   ushort j=min((int)(y/this->unit_height),(1<<this->level)-1);
@@ -170,7 +176,7 @@ uint QuadTree<T>::mortonNumber(double x, double y) {
 }
 
 template<class T>
-void QuadTree<T>::searchMorton(uint morton,int search_depth,vector<pair<const array<double,2>&,T>> &buf){
+void QuadTree<T>::searchMorton(uint morton,int search_depth,vector<pair<const array<double,2>&,T>> &buf) const {
   const uint LOWER_BIT_MAX=__UINT32_MAX__>>(2*search_depth),//ここをbitsetに付いてきたUINT32_MAXにして、3項演算子でない状態でやっていたら何故か値がsearch_depth==16でUINT32_MAXになった
              MORTON_HIGHER_BIT=morton&~LOWER_BIT_MAX,MORTON_MAX=MORTON_HIGHER_BIT+LOWER_BIT_MAX;
   auto e=this->quad_tree.lower_bound(MORTON_HIGHER_BIT);
