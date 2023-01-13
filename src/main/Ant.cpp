@@ -2,32 +2,43 @@
 #include<cmath>
 #include"Util.hpp"
 #include"Ant.hpp"
-#include"ACOSteiner.hpp"
 #include"ACOTable.hpp"
+#include"QuadTree.hpp"
+#include"ACOSteiner.hpp"
 using namespace std;
+
+struct Joint{
+  int route_index,index_in_route;
+  double forward_ratio;
+};
+
+struct SingleRoute{
+  Joint joint;
+  vector<v2d> route;
+  double cost=0,length=0;
+};
 
 Ant::Ant(const ACOSteiner &world) : BIRTH_TIME(world.getTime()),
                                     MIN_DISTANCE(world.getMinDistance()),
                                     MAX_DISTANCE(world.getMaxDistance()) {
   this->path.reserve(world.getConnectPoints().size());
-  if(world.getACOTable().size())searchNewRoute(world,this->BIRTH_TIME);
-  else constructFirstAnt(world);
+  if(world.getACOTable().size())constructModifiedRoute(world,this->BIRTH_TIME);
+  else constructFirstRoute(world);
+  this->total_cost=this->total_length=0;
+  for(int i=0;i<path.size();i++){
+    this->total_cost+=this->path[i]->cost;
+    this->total_length+=this->path[i]->length;
+  }
+  this->pheromone_v=this->total_cost;
 }
-
-//inline tuple<int,int,double> Ant::getBackTimesOnRoute(int index) const {
-//  return this->path[index].first;
-//}
 
 inline const vector<v2d>& Ant::getRelayPointsOnRoute(int index) const {
-  return *(this->path[index].second);
-}
-
-const pair<tuple<int,int,double>,const vector<v2d> &> Ant::getRoute(int index) const {
-  return {this->path[index].first,*(this->path[index].second)};
+  return this->path[index]->route;
 }
 
 inline int Ant::numOfPoints() const {return this->path.size();}
-inline double Ant::allCost() const {return this->all_cost;}
+inline double Ant::cost() const {return this->total_cost;}
+inline double Ant::length() const {return this->total_length;}
 inline void Ant::evaporate(double evaporation_cofficient) const {this->pheromone_v*=evaporation_cofficient;}
 inline double Ant::pheromone() const {return this->pheromone_v;}
 
@@ -36,11 +47,11 @@ inline double Ant::pheromone() const {return this->pheromone_v;}
 static random_device seed_gen;
 static default_random_engine random_engine(seed_gen());
 
-void Ant::constructFirstAnt(const ACOSteiner &world){
+void Ant::constructFirstRoute(const ACOSteiner &world){
   //TODO: 初期の蟻の実装!
 }
 
-void Ant::searchNewRoute(const ACOSteiner &world,ll current_time){
+void Ant::constructModifiedRoute(const ACOSteiner &world,ll current_time){
   const ACOTable &TABLE=world.getACOTable();
   double pheromone_sum=TABLE.sum(ACOTableColumn::PHEROMONE);
   uniform_real_distribution<> dist(0,pheromone_sum);
@@ -61,24 +72,32 @@ void Ant::searchNewRoute(const ACOSteiner &world,ll current_time){
   addRandVecToOneRoute(world,base_ant,target_route_index);
 }
 
-static double moveStandardDeviation(double distance_mean,double cost_std_deviation,bool mutation){
-  static const double EXPONENT_BASE=pow(0.5,20);
-  return distance_mean/10*(1-pow(EXPONENT_BASE,cost_std_deviation/distance_mean)+mutation);
+static double moveStandardDeviation(double distance_c2j,double basic_move_ratio,
+                                    double stdev_cost,double mean_length,
+                                    bool mutation){
+  return distance_c2j*basic_move_ratio*min(1.0,10*stdev_cost/mean_length+mutation);
 }
 
 void Ant::addRandVecToOneRoute(const ACOSteiner &world, const Ant *base_ant,
-                               const int index) {
-  this->path[index].second.reset(new vector<v2d>);
+                               const int target_index) {
+  this->path[target_index].reset(new SingleRoute);
   const ACOTable &TABLE=world.getACOTable();
-  const QuadTreeAnt &QT=world.getQuadTreeAnt(index);
-  const auto &START_POINT=world.getConnectPoint(index);
-  const auto &BASE_ROUTE=*(base_ant->path[index].second);
-  auto &target_route=*(this->path[index].second);
+  const QuadTreeAnt &QTA=world.getQuadTreeAnt(target_index);
+  const auto &START_POINT=world.getConnectPoint(target_index);
+  const auto &BASE_ROUTE=base_ant->path[target_index]->route;
+  auto &target_route=this->path[target_index]->route;
+  QuadTree<const int> own_qt(QTA.width(),QTA.height());
+  for(int i=0;i<this->path.size();i++)
+    if(i!=target_index&&this->path[i]->joint.route_index!=target_index)
+      own_qt.addRoute(this->path[i]->route,i);
+  
   uniform_real_distribution<> uniform_unit_dist(0,1);
   //標準偏差を掛けると発散する危険があるので以下のようにする。
   const double move_standard_deviation=moveStandardDeviation(
-    TABLE.mean(ACOTableColumn::COST),
+    euclid(BASE_ROUTE[0],BASE_ROUTE[BASE_ROUTE.size()-1]),
+    world.getBasicMoveRatio(),
     TABLE.stdev(ACOTableColumn::COST),
+    TABLE.mean(ACOTableColumn::LENGTH),
     uniform_unit_dist(random_engine)>=world.getMutationProbability()||
       TABLE.size()<TABLE.getCapacity()
   );
@@ -93,10 +112,7 @@ void Ant::addRandVecToOneRoute(const ACOSteiner &world, const Ant *base_ant,
   const int actual_add_end_index=min((int)BASE_ROUTE.size()-1,original_add_end_index);
   target_route.reserve(BASE_ROUTE.size());
   vector<int> b2t_index_map(BASE_ROUTE.size());
-  for(int i=0;i<add_start_index;i++){
-    properPushBack(target_route,BASE_ROUTE[i]);
-    b2t_index_map[i]=i;
-  }
+  for(int i=0;i<add_start_index;i++)properPushBack(target_route,BASE_ROUTE[i]);
   //TODO: 接合点の移動を考慮する
   for(int i=add_start_index;i<add_main_target;i++){
     properPushBack(target_route,BASE_ROUTE[i]+base_random_vec*sin(M_PI/2*i/add_main_target));
