@@ -31,8 +31,8 @@ void quadTreeTest(){
     qt.addRoute(routes[i],0);
   }
   auto nodes=qt.reachablePoints(50,50,50,50);
-  for(int i=0;i<nodes->size();i++){
-    const array<double,2> &p=(*nodes)[i].first;
+  for(int i=0;i<nodes.size();i++){
+    const array<double,2> &p=nodes[i].first;
     printf("%g,%g\n",p[0],p[1]);
   }
 }

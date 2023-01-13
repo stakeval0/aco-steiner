@@ -73,13 +73,16 @@ void QuadTree<T>::removeRoute(const vector<array<double,2>> &route,T a){
 }
 
 template<class T>
-vector<pair<const array<double,2>&,T>>* QuadTree<T>::reachablePoints(double cx,double cy,double width,double height) const {
-  vector<pair<const array<double,2>&,T>>* ret=new vector<pair<const array<double,2>&,T>>;
+vector<pair<const array<double,2>&,T>> QuadTree<T>::reachablePoints(double cx,double cy,double width,double height) const {
+  vector<pair<const array<double,2>&,T>> ret;
   stack<array<uint,3>>s;//left_up_morton,right_down_morton,depth
   double hw=width/2,hh=height/2;
   double p1_x=max(cx-hw,0.),p1_y=max(cy-hh,0.),
          p2_x=min(cx+hw,this->width_v),p2_y=min(cy+hh,this->height_v);
   const int MAX_DEPTH=ceil(log2(this->width_v*this->height_v/(width*height))/2);
+  const auto filter=[cx,cy,width,height](const array<double,2>& p){
+    return abs(p[0]-cx)<=width/2&&abs(p[1]-cy)<=height/2;
+  };
   array<uint,3>tmp;
   tmp[0]=mortonNumber(p1_x,p1_y);tmp[1]=mortonNumber(p2_x,p2_y);
   tmp[2]=mortonDepth(tmp[0],tmp[1]);
@@ -87,7 +90,7 @@ vector<pair<const array<double,2>&,T>>* QuadTree<T>::reachablePoints(double cx,d
   while(!s.empty()){
     tmp=s.top();s.pop();
     if(tmp[2]>=MAX_DEPTH){
-      searchMorton(tmp[0],tmp[2],*ret);
+      searchMorton(tmp[0],tmp[2],filter,ret);
       //cout<<tmp[0]<<' '<<tmp[1]<<endl;
       continue;
     }
@@ -176,7 +179,7 @@ uint QuadTree<T>::mortonNumber(double x, double y)  const {
 }
 
 template<class T>
-void QuadTree<T>::searchMorton(uint morton,int search_depth,vector<pair<const array<double,2>&,T>> &buf) const {
+void QuadTree<T>::searchMorton(uint morton,int search_depth,const function<bool(const array<double,2>&)> &filter,vector<pair<const array<double,2>&,T>> &buf) const {
   const uint LOWER_BIT_MAX=__UINT32_MAX__>>(2*search_depth),//ここをbitsetに付いてきたUINT32_MAXにして、3項演算子でない状態でやっていたら何故か値がsearch_depth==16でUINT32_MAXになった
              MORTON_HIGHER_BIT=morton&~LOWER_BIT_MAX,MORTON_MAX=MORTON_HIGHER_BIT+LOWER_BIT_MAX;
   auto e=this->quad_tree.lower_bound(MORTON_HIGHER_BIT);
@@ -185,7 +188,7 @@ void QuadTree<T>::searchMorton(uint morton,int search_depth,vector<pair<const ar
   for(;e!=this->quad_tree.end()&&e->first<=MORTON_MAX;e++){
     //cout<<e->first<<endl;
     for(const auto &g:e->second){//NOTE: 本当はsetをbufに詰められる様にした方が速そうだが、簡単なのでこうする
-      buf.emplace_back(*(g.first),g.second);
+      if(filter(*(g.first)))buf.emplace_back(*(g.first),g.second);
     }
   }
 }
