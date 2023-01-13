@@ -3,8 +3,8 @@
 #include"Util.hpp"
 #include"Ant.hpp"
 #include"ACOSteiner.hpp"
-#include"ACOTable.hpp"
 #include"QuadTree.hpp"
+#include"ACOTable.hpp"
 
 constexpr double MIN_SPACE_RATIO_DEFAULT=1.0/100,MAX_SPACE_RATIO_DEFAULT=1.0/10;
 

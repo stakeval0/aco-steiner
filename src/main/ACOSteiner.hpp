@@ -2,12 +2,12 @@
 #define _ACO_STEINER_HPP_
 #include<array>
 #include<functional>
-#include"QuadTree.hpp"
 using namespace std;
 using ll =long long;
 
 class Ant;
 class ACOTable;
+template<class T> class QuadTree;
 
 using QuadTreeAnt=QuadTree<const Ant*>;
 
