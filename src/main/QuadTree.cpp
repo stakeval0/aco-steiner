@@ -35,7 +35,13 @@ static void pushNewMortonArea(stack<array<uint,3>> &s,uint left_up_morton,uint r
   s.push(tmp);
 }
 
-//TODO: 後でlevelを消す
+template<class T>
+bool operator<(const QuadTreeNode<T> &n1,const QuadTreeNode<T> &n2){
+  if(&(n1.point)!=&(n2.point))return &(n1.point)<&(n2.point);
+  if(n1.index!=n2.index)return n1.index<n2.index;
+  return n1.value<n2.value;
+}
+
 // 4分木のモデル
 template<class T>
 QuadTree<T>::QuadTree(double width, double height, int level) {
@@ -68,7 +74,7 @@ void QuadTree<T>::addRoute(const vector<array<double,2>> &route,T a){
     const array<double,2> &point=route[i];
     if(!inWorld(point[0],point[1]))continue;
     int morton_num=mortonNumber(point[0],point[1]);
-    quad_tree[morton_num].emplace(&point,a);
+    quad_tree[morton_num].emplace(point,i,a);
   }
 }
 
@@ -78,12 +84,12 @@ void QuadTree<T>::removeRoute(const vector<array<double,2>> &route,T a){
     const array<double,2> &point=route[i];
     if(!inWorld(point[0],point[1]))continue;
     int morton_num=mortonNumber(point[0],point[1]);
-    quad_tree[morton_num].erase({&point,a});
+    quad_tree[morton_num].erase({point,i,a});
   }
 }
 
 template<class T>
-vector<pair<const array<double,2>&,T>> QuadTree<T>::reachablePoints(
+vector<QuadTreeNode<T>> QuadTree<T>::reachablePoints(
     double cx,double cy,double width,double height) const {
   const auto filter=[cx,cy,width,height](const array<double,2>& p){
     return abs(p[0]-cx)<=width/2&&abs(p[1]-cy)<=height/2;
@@ -92,10 +98,10 @@ vector<pair<const array<double,2>&,T>> QuadTree<T>::reachablePoints(
 }
 
 template<class T>
-vector<pair<const array<double,2>&,T>> QuadTree<T>::reachablePoints(
+vector<QuadTreeNode<T>> QuadTree<T>::reachablePoints(
     double cx,double cy,double width,double height,
     const function<bool(const array<double,2>&)> &filter) const {
-  vector<pair<const array<double,2>&,T>> ret;
+  vector<QuadTreeNode<T>> ret;
   stack<array<uint,3>>s;//left_up_morton,right_down_morton,depth
   double hw=width/2,hh=height/2;
   double p1_x=max(cx-hw,0.),p1_y=max(cy-hh,0.),
@@ -204,7 +210,7 @@ uint QuadTree<T>::mortonNumber(double x, double y)  const {
 }
 
 template<class T>
-void QuadTree<T>::searchMorton(uint morton,int search_depth,const function<bool(const array<double,2>&)> &filter,vector<pair<const array<double,2>&,T>> &buf) const {
+void QuadTree<T>::searchMorton(uint morton,int search_depth,const function<bool(const array<double,2>&)> &filter,vector<QuadTreeNode<T>> &buf) const {
   const uint LOWER_BIT_MAX=__UINT32_MAX__>>(2*search_depth),//ここをbitsetに付いてきたUINT32_MAXにして、3項演算子でない状態でやっていたら何故か値がsearch_depth==16でUINT32_MAXになった
              MORTON_HIGHER_BIT=morton&~LOWER_BIT_MAX,MORTON_MAX=MORTON_HIGHER_BIT+LOWER_BIT_MAX;
   auto e=this->quad_tree.lower_bound(MORTON_HIGHER_BIT);
@@ -213,7 +219,7 @@ void QuadTree<T>::searchMorton(uint morton,int search_depth,const function<bool(
   for(;e!=this->quad_tree.end()&&e->first<=MORTON_MAX;e++){
     //cout<<e->first<<endl;
     for(const auto &g:e->second){//NOTE: 本当はsetをbufに詰められる様にした方が速そうだが、簡単なのでこうする
-      if(filter(*(g.first)))buf.emplace_back(*(g.first),g.second);
+      if(filter(g.point))buf.emplace_back(g);
     }
   }
 }
