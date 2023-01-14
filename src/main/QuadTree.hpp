@@ -24,13 +24,16 @@ class QuadTree {
     void searchMorton(uint morton,int search_depth,
                       const function<bool(const array<double,2>&)> &filter,
                       vector<pair<const array<double,2>&,T>> &buf) const;
-    //void addPoint(const array<double,2> &object,T a);// array<double,2>を追加する
   public:
     QuadTree(double width, double height);
     QuadTree(double width, double height, int level);
     void addRoute(const vector<array<double,2>> &route,T a);
     void removeRoute(const vector<array<double,2>> &route,T a);
-    vector<pair<const array<double,2> &,T>> reachablePoints(double cx,double cy,double width,double height) const;
+    vector<pair<const array<double,2> &,T>> reachablePoints(
+        double cx,double cy,double width,double height) const;
+    vector<pair<const array<double,2> &,T>> reachablePoints(
+        double cx,double cy,double width,double height,
+        const function<bool(const array<double,2>&)> &filter) const;
     double width() const;
     double height() const;
 };

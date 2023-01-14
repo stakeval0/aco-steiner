@@ -73,16 +73,24 @@ void QuadTree<T>::removeRoute(const vector<array<double,2>> &route,T a){
 }
 
 template<class T>
-vector<pair<const array<double,2>&,T>> QuadTree<T>::reachablePoints(double cx,double cy,double width,double height) const {
+vector<pair<const array<double,2>&,T>> QuadTree<T>::reachablePoints(
+    double cx,double cy,double width,double height) const {
+  const auto filter=[cx,cy,width,height](const array<double,2>& p){
+    return abs(p[0]-cx)<=width/2&&abs(p[1]-cy)<=height/2;
+  };
+  return reachablePoints(cx,cy,width,height,filter);
+}
+
+template<class T>
+vector<pair<const array<double,2>&,T>> QuadTree<T>::reachablePoints(
+    double cx,double cy,double width,double height,
+    const function<bool(const array<double,2>&)> &filter) const {
   vector<pair<const array<double,2>&,T>> ret;
   stack<array<uint,3>>s;//left_up_morton,right_down_morton,depth
   double hw=width/2,hh=height/2;
   double p1_x=max(cx-hw,0.),p1_y=max(cy-hh,0.),
          p2_x=min(cx+hw,this->width_v),p2_y=min(cy+hh,this->height_v);
   const int MAX_DEPTH=ceil(log2(this->width_v*this->height_v/(width*height))/2);
-  const auto filter=[cx,cy,width,height](const array<double,2>& p){
-    return abs(p[0]-cx)<=width/2&&abs(p[1]-cy)<=height/2;
-  };
   array<uint,3>tmp;
   tmp[0]=mortonNumber(p1_x,p1_y);tmp[1]=mortonNumber(p2_x,p2_y);
   tmp[2]=mortonDepth(tmp[0],tmp[1]);
