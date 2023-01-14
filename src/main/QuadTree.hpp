@@ -38,6 +38,7 @@ class QuadTree {
     double width() const;
     double height() const;
     const array<double,2>& size() const;
+    const array<double,2>& minPoint() const;
 };
 
 #endif//_QUAD_TREE_HPP_

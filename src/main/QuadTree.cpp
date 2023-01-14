@@ -170,6 +170,9 @@ inline double QuadTree<T>::height() const {return this->size_v[1];}
 template <class T>
 inline const array<double,2>& QuadTree<T>::size() const {return this->size_v;}
 
+template <class T>
+inline const array<double,2>& QuadTree<T>::minPoint() const {return this->offset_v;}
+
 //以下でprivate関数
 
 template<class T>

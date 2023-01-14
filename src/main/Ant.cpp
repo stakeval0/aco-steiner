@@ -111,35 +111,37 @@ void Ant::addRandVecToOneRoute(const ACOSteiner &world, const Ant *base_ant,
   const int original_add_end_index=add_main_target+arched_add_range/2;//NOTE: 本来の中継点の個数を上回ることもある
   const int actual_add_end_index=min((int)BASE_ROUTE.size()-1,original_add_end_index);
   target_route.reserve(BASE_ROUTE.size());
-  vector<int> b2t_index_map(BASE_ROUTE.size());
-  for(int i=0;i<add_start_index;i++)properPushBack(target_route,BASE_ROUTE[i]);
+  v2d min_point=QTA.minPoint(),max_point=min_point+QTA.size();
+  for(int i=0;i<add_start_index;i++)
+    properPushBack(target_route,BASE_ROUTE[i],min_point,max_point);
   //TODO: 接合点の移動を考慮する
   for(int i=add_start_index;i<add_main_target;i++){
-    properPushBack(target_route,BASE_ROUTE[i]+base_random_vec*sin(M_PI/2*i/add_main_target));
-    b2t_index_map[i]=target_route.size()-1;
+    properPushBack(target_route,
+        BASE_ROUTE[i]+base_random_vec*sin(M_PI/2*i/add_main_target),
+        min_point,max_point);
   }
   for(int i=add_main_target;i<=actual_add_end_index;i++){
     properPushBack(
       target_route,
-      BASE_ROUTE[i]+base_random_vec*sin(M_PI/2*(1+(double)i/original_add_end_index))
+      BASE_ROUTE[i]+base_random_vec*sin(M_PI/2*(1+(double)i/original_add_end_index)),
+      min_point,max_point
     );
-    b2t_index_map[i]=target_route.size()-1;
   }
-  for(int i=actual_add_end_index+1;i<BASE_ROUTE.size();i++){
-    properPushBack(target_route,BASE_ROUTE[i]);
-    b2t_index_map[i]=i;
-  }
+  for(int i=actual_add_end_index+1;i<BASE_ROUTE.size();i++)
+    properPushBack(target_route,BASE_ROUTE[i],min_point,max_point);
 }
 
-void Ant::properPushBack(vector<v2d> &v,const v2d &e){
-  const double distance=euclid(v[v.size()-1],e);
+void Ant::properPushBack(vector<v2d> &v,const v2d &e,const v2d &min_point,const v2d &max_point){
+  v2d p{max(min_point[0],e[0]),max(min_point[1],e[1])};
+  p[0]=min(p[0],max_point[0]);p[1]=min(p[1],max_point[1]);
+  const double distance=euclid(v[v.size()-1],p);
   if(distance<MIN_DISTANCE)return;//NOTE: 簡単のため、近い時は重心を取るのではなくて追加しないようにした
   if(distance<=MAX_DISTANCE){//MIN_DISTANCE<=distanceは保証されている
-    v.push_back(e);return;
+    v.push_back(p);return;
   }
   const double ideal_complement_distance=mean(this->MIN_DISTANCE,this->MAX_DISTANCE);
   const int vector_num=ceil(distance/ideal_complement_distance);//NOTE: round等だと距離条件が満たされない場合がある
   for(int i=1;i<=vector_num;i++){
-    v.push_back((double)i/vector_num*e);
+    v.push_back((double)i/vector_num*p);
   }
 }
