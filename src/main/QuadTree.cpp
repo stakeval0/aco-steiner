@@ -71,21 +71,29 @@ QuadTree<T>::QuadTree(const array<double,2> &offset,const array<double,2> &size,
 template<class T>
 void QuadTree<T>::addRoute(const vector<array<double,2>> &route,T a){
   for(int i=0;i<route.size();i++){
-    const array<double,2> &point=route[i];
-    if(!inWorld(point[0],point[1]))continue;
-    int morton_num=mortonNumber(point[0],point[1]);
-    quad_tree[morton_num].emplace(point,i,a);
+    addPoint(route[i],i,a);
   }
 }
 
 template<class T>
 void QuadTree<T>::removeRoute(const vector<array<double,2>> &route,T a){
   for(int i=0;i<route.size();i++){
-    const array<double,2> &point=route[i];
-    if(!inWorld(point[0],point[1]))continue;
-    int morton_num=mortonNumber(point[0],point[1]);
-    quad_tree[morton_num].erase({point,i,a});
+    removePoint(route[i],i,a);
   }
+}
+
+template <class T>
+void QuadTree<T>::addPoint(const array<double, 2> &point, int index, T a) {
+  if(!inWorld(point[0],point[1]))return;
+  int morton_num=mortonNumber(point[0],point[1]);
+  quad_tree[morton_num].emplace(point,index,a);
+}
+
+template <class T>
+void QuadTree<T>::removePoint(const array<double, 2> &point, int index, T a) {
+  if(!inWorld(point[0],point[1]))return;
+  int morton_num=mortonNumber(point[0],point[1]);
+  quad_tree[morton_num].erase({point,index,a});
 }
 
 template<class T>

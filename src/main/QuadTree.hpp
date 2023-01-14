@@ -39,6 +39,8 @@ class QuadTree {
     QuadTree(const array<double,2> &offset,const array<double,2> &size,int level);
     void addRoute(const vector<array<double,2>> &route,T a);
     void removeRoute(const vector<array<double,2>> &route,T a);
+    void addPoint(const array<double,2> &point,int index,T a);
+    void removePoint(const array<double,2> &point,int index,T a);
     vector<QuadTreeNode<T>> reachablePoints(
         double cx,double cy,double width,double height) const;
     vector<QuadTreeNode<T>> reachablePoints(
