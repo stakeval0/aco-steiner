@@ -1,5 +1,6 @@
 #include<iostream>
 #include<cmath>
+#include<type_traits>
 #include"Util.hpp"
 #include"Ant.hpp"
 #include"ACOSteiner.hpp"
@@ -14,26 +15,24 @@ static inline void printArgumentErrorMessage(const char *func_name,const char *c
 
 ACOSteiner::ACOSteiner(const vector<array<double,2>> &points){
   this->table=new ACOTable();
-  this->cost_function=euclid;
+  this->cost_function=static_cast<double(*)(
+      const array<double,2>&,const array<double,2>&)>(euclid);
   double xmin=0,xmax=0,ymin=0,ymax=0;
   for(int i=0;i<points.size();i++){
+    this->points[i][0]=points[i][0];
+    this->points[i][1]=points[i][1];
     xmin=min(xmin,points[i][0]);xmax=max(xmax,points[i][0]);
     ymin=min(ymin,points[i][1]);ymax=max(ymax,points[i][1]);
   }
-  this->points_offset={xmin,ymin};
   this->pheromone_cofficient=0;
-  for(int i=0;i<points.size();i++){
-    this->points[i][0]=points[i][0]-xmin;
-    this->points[i][1]=points[i][1]-ymin;
-  }
-  double width=xmax-xmin,height=ymax-ymin;
   int num_of_route=points.size()-1;
+  array<double,2> points_offset{xmin,ymin},size{xmax-xmin,ymax-ymin};
   this->qtworld.reserve(num_of_route);
   for(int i=0;i<num_of_route;i++){
-    this->qtworld.emplace_back(width,height);
+    this->qtworld.emplace_back(points_offset,size);
     this->pheromone_cofficient=cost_function(points[i],points[i+1]);
   }
-  double diagnoal=sqrt(width*width+height*height);
+  double diagnoal=euclid(size);
   this->min_distance=diagnoal*MIN_SPACE_RATIO_DEFAULT;
   this->max_distance=diagnoal*MAX_SPACE_RATIO_DEFAULT;
 }

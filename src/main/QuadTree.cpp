@@ -39,17 +39,27 @@ static void pushNewMortonArea(stack<array<uint,3>> &s,uint left_up_morton,uint r
 // 4分木のモデル
 template<class T>
 QuadTree<T>::QuadTree(double width, double height, int level) {
-  if(level>sizeof(ushort)*8){fprintf(stderr,"%s: level is too big.\n",__PRETTY_FUNCTION__);exit(EXIT_FAILURE);}
-  this->width_v=width;
-  this->height_v=height;
-  this->level=level;
-  this->unit_width=this->width_v/(double)(1<<this->level);
-  this->unit_height=this->height_v/(double)(1<<this->level);
+  new (this) QuadTree({0,0},{width,height},level);
 }
 
 template<class T>
 QuadTree<T>::QuadTree(double width,double height){
   new (this) QuadTree(width,height,sizeof(uint)*8/2);
+}
+
+template<class T>
+QuadTree<T>::QuadTree(const array<double,2> &offset,const array<double,2> &size){
+  new (this) QuadTree(offset,size,sizeof(uint)*8/2);
+}
+
+template<class T>
+QuadTree<T>::QuadTree(const array<double,2> &offset,const array<double,2> &size,int level) {
+  if(level>sizeof(ushort)*8){fprintf(stderr,"%s: level is too big.\n",__PRETTY_FUNCTION__);exit(EXIT_FAILURE);}
+  this->offset_v=offset;
+  this->size_v=size;
+  this->level=level;
+  this->unit_width=this->size_v[0]/(double)(1<<this->level);
+  this->unit_height=this->size_v[1]/(double)(1<<this->level);
 }
 
 template<class T>
@@ -89,8 +99,8 @@ vector<pair<const array<double,2>&,T>> QuadTree<T>::reachablePoints(
   stack<array<uint,3>>s;//left_up_morton,right_down_morton,depth
   double hw=width/2,hh=height/2;
   double p1_x=max(cx-hw,0.),p1_y=max(cy-hh,0.),
-         p2_x=min(cx+hw,this->width_v),p2_y=min(cy+hh,this->height_v);
-  const int MAX_DEPTH=ceil(log2(this->width_v*this->height_v/(width*height))/2);
+         p2_x=min(cx+hw,this->width()),p2_y=min(cy+hh,this->height());
+  const int MAX_DEPTH=ceil(log2(this->width()*this->height()/(width*height))/2);
   array<uint,3>tmp;
   tmp[0]=mortonNumber(p1_x,p1_y);tmp[1]=mortonNumber(p2_x,p2_y);
   tmp[2]=mortonDepth(tmp[0],tmp[1]);
@@ -152,10 +162,13 @@ vector<pair<const array<double,2>&,T>> QuadTree<T>::reachablePoints(
 }
 
 template<class T>
-inline double QuadTree<T>::width() const {return this->width_v;}
+inline double QuadTree<T>::width() const {return this->size_v[0];}
 
 template<class T>
-inline double QuadTree<T>::height() const {return this->height_v;}
+inline double QuadTree<T>::height() const {return this->size_v[1];}
+
+template <class T>
+inline const array<double,2>& QuadTree<T>::size() const {return this->size_v;}
 
 //以下でprivate関数
 
@@ -170,7 +183,8 @@ uint QuadTree<T>::separate(ushort n) const {
 
 template<class T>
 bool QuadTree<T>::inWorld(double x,double y) const {
-  if(x<0||y<0||x>this->width_v||y>this->height_v){
+  double x_in_range=x-this->offset_v[0],y_in_range=y-this->offset_v[1];
+  if(x_in_range<0||y_in_range<0||x_in_range>this->width()||y_in_range>this->height()){
     fprintf(stderr,"%s: Irregular point (%g, %g) was observed.\n",__PRETTY_FUNCTION__,x,y);
     return false;
   }
@@ -180,8 +194,8 @@ bool QuadTree<T>::inWorld(double x,double y) const {
 template<class T>
 uint QuadTree<T>::mortonNumber(double x, double y)  const {
   //x==this->widthになるとオーバーフローするのでその対策
-  ushort i=min((int)(x/this->unit_width),(1<<this->level)-1);
-  ushort j=min((int)(y/this->unit_height),(1<<this->level)-1);
+  ushort i=min((int)((x-this->offset_v[0])/this->unit_width),(1<<this->level)-1);
+  ushort j=min((int)((y-this->offset_v[1])/this->unit_height),(1<<this->level)-1);
   uint ret=(separate(i) | separate(j) << 1);
   return ret;
 }

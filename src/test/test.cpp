@@ -15,11 +15,11 @@ void setTest(){
 }
 
 void quadTreeTest(){
-  QuadTree<const int> qt(100.0,100.0);
+  QuadTree<const int> qt({10,10},{100.0,100.0});
   vector<vector<array<double,2>>>routes(100,vector<array<double,2>>(100));
   random_device seed_gen;
   default_random_engine engine(seed_gen());
-  uniform_real_distribution<> dist(0,100);
+  uniform_real_distribution<> dist(10,110);
   for(int i=0;i<100;i++){
     for(int j=0;j<100;j++){
       for(int k=0;k<routes[i][j].size();k++){

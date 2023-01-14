@@ -3,7 +3,7 @@
 #include<array>
 using namespace std;
 
-double abs(const array<double,2> &v);
+double euclid(const array<double,2> &v);
 double euclid(const array<double,2> &a,const array<double,2> &b);
 void rotate(array<double,2> &v,double theta);
 array<double,2>& operator+=(array<double,2> &v,double d);

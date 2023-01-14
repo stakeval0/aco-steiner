@@ -18,7 +18,6 @@ class ACOSteiner{
     double mutation_probability=0.1,evaporation_cofficient=0.9,basic_move_ratio=0.1;
     double pheromone_cofficient;
     vector<array<double,2>> points;//NOTE: constは掛けられないが実質const
-    array<double,2> points_offset;
     ACOTable *table;
     vector<QuadTreeAnt> qtworld;
     function<double(const array<double,2> &,const array<double,2> &)> cost_function;

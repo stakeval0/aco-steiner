@@ -12,8 +12,7 @@ using namespace std;
 template<class T>
 class QuadTree {
   private:
-    double width_v;
-    double height_v;
+    array<double,2> offset_v,size_v;
     int level;
     double unit_width;
     double unit_height;
@@ -27,6 +26,8 @@ class QuadTree {
   public:
     QuadTree(double width, double height);
     QuadTree(double width, double height, int level);
+    QuadTree(const array<double,2> &offset,const array<double,2> &size);
+    QuadTree(const array<double,2> &offset,const array<double,2> &size,int level);
     void addRoute(const vector<array<double,2>> &route,T a);
     void removeRoute(const vector<array<double,2>> &route,T a);
     vector<pair<const array<double,2> &,T>> reachablePoints(
@@ -36,6 +37,7 @@ class QuadTree {
         const function<bool(const array<double,2>&)> &filter) const;
     double width() const;
     double height() const;
+    const array<double,2>& size() const;
 };
 
 #endif//_QUAD_TREE_HPP_

@@ -1,12 +1,12 @@
 #include<cmath>
 #include"Util.hpp"
 
-double abs(const array<double,2> &v){
+double euclid(const array<double,2> &v){
   return sqrt(v[0]*v[0]+v[1]*v[1]);
 }
 
 inline double euclid(const array<double,2> &a,const array<double,2> &b){
-  return abs(a-b);
+  return euclid(a-b);
 }
 
 void rotate(array<double,2> &v,double theta){
