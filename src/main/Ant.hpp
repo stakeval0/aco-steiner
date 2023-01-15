@@ -28,12 +28,12 @@ class Ant{
         QuadTree<const int> &own_qt);
     void properPushBack(
         const int target_index,const v2d &e,
-        const v2d &min_point,const v2d &max_point,
         const function<double(const v2d&,const v2d&)> &cost_function,
         QuadTree<const int> &own_qt);
     optional<pair<const Ant*,Joint>> judgeJointTo(
         const int target_index,const Ant* base_ant,const QuadTree<const Ant*> &QTA,
-        const QuadTree<const int> &own_qt,const double reachable_radius);
+        QuadTree<const int> &own_qt,const double reachable_radius,
+        const function<double(const v2d&,const v2d&)> &cost_function);
     pair<JointTarget,int> archedAdd(const int target_index,const Ant *base_ant,
                                     v2d base_random_vec,const ACOSteiner &world,
                                     QuadTree<const int> &own_qt);

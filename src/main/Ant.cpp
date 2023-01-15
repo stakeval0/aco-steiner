@@ -143,14 +143,14 @@ pair<JointTarget,int> Ant::archedAdd(const int target_index,const Ant *base_ant,
   for(int i=add_start_index;i<add_main_target;i++){
     properPushBack(target_index,
         base_points[i]+base_random_vec*sin(M_PI/2*(i-add_start_index)/add_range),
-        min_point,max_point,cost_lambda,own_qt);
+        cost_lambda,own_qt);
   }
   const int add_range=original_add_end_index-add_main_target;
   for(int i=add_main_target;i<=actual_add_end_index;i++){
     properPushBack(target_index,
         base_points[i]+base_random_vec*
             sin(M_PI/2*(1+(double)(i-add_main_target)/add_range)),
-        min_point,max_point,cost_lambda,own_qt);
+        cost_lambda,own_qt);
   }
   for(int i=actual_add_end_index+1;i<base_points.size();i++)
     tracePushBack(target_index,base_points[i],cost_lambda,own_qt);
@@ -171,11 +171,11 @@ void Ant::tracePushBack(
 
 void Ant::properPushBack(
     const int target_index,const v2d &e,
-    const v2d &min_point,const v2d &max_point,
     const function<double(const v2d&,const v2d&)> &cost_function,
     QuadTree<const int> &own_qt){
   SingleRoute &route=*(this->path[target_index]);
   auto &points=route.points;
+  const auto &min_point=own_qt.minPoint(),&max_point=min_point+own_qt.size();
   const v2d &last_point=points[points.size()-1];
   v2d p{max(min_point[0],e[0]),max(min_point[1],e[1])};
   p[0]=min(p[0],max_point[0]);p[1]=min(p[1],max_point[1]);
@@ -203,7 +203,8 @@ inline static bool circleFilter(const v2d &v,const v2d &c,double radius){
 
 optional<pair<const Ant*,Joint>> Ant::judgeJointTo(
     const int target_index,const Ant* base_ant,const QuadTree<const Ant*> &qta,
-    const QuadTree<const int> &own_qt,const double reachable_radius){
+    QuadTree<const int> &own_qt,const double reachable_radius,
+    const function<double(const v2d&,const v2d&)> &cost_function){
   const SingleRoute &current_route=*(this->path[target_index]);
   const vector<v2d> &current_points=current_route.points;
   const v2d &current_point=current_points[current_points.size()-1];
@@ -212,15 +213,12 @@ optional<pair<const Ant*,Joint>> Ant::judgeJointTo(
   const auto filter=[&current_point,allowance_reachable_radius](const v2d &p){
     return circleFilter(p,current_point,allowance_reachable_radius);
   };
-  const auto &ant_reachables=qta.reachablePoints(
-      current_point[0],current_point[1],allowance_reachable_diameter,
-      allowance_reachable_diameter,filter);
   vector<QuadTreeNode<const int>> &&points_reachables=own_qt.reachablePoints(
       current_point[0],current_point[1],allowance_reachable_diameter,
       allowance_reachable_diameter,filter);
   //sort(points_reachables.begin(),points_reachables.end(),);
   if(points_reachables.size()){
-    //NOTE: ここで乱数を加えたところが自分の既に確定している経路と衝突していないことを保証
+    //NOTE: このifで乱数を加えたところが自分の既に確定している経路と衝突していないことを保証
     const QuadTreeNode<const int> *tmp=&points_reachables[0];
     double min_distance,tmp_distance;
     for(int i=1;i<points_reachables.size();i++){
@@ -231,7 +229,48 @@ optional<pair<const Ant*,Joint>> Ant::judgeJointTo(
         tmp=&points_reachables[i];
       }
     }
-    //TODO: 最も近い中継点が関係する辺の内、最も近いところにくっつける
+    //NOTE: 最も近い中継点が関係する辺の内、最も近いところにくっつける
+    const auto &nearest_node=*tmp;
+    const v2d nearest2current_vec=current_point-nearest_node.point;
+    const double nearest2current_norm_2=pow(euclid(nearest2current_vec),2);
+    const auto &joint_target_route=*(this->path[nearest_node.value]);
+    v2d back_nearest,forward_nearest;
+    back_nearest=forward_nearest=nearest_node.point;
+    double back_ratio=0,forward_ratio=0;
+    //NOTE: 上で&points_reachables[0]から変わらなかった場合などは弾かなければならない
+    if(euclid(nearest_node.point,current_point)<allowance_reachable_radius){
+      if(nearest_node.index>0){
+        const v2d back_vector=
+            joint_target_route.points[nearest_node.index-1]-nearest_node.point;
+        v2d ortho_vec=dot(back_vector,nearest2current_vec)/
+                      nearest2current_norm_2*back_vector;
+        back_ratio=max(0.,dot(ortho_vec,back_vector));
+        if(back_ratio>0)back_nearest=nearest_node.point+ortho_vec;
+      }
+      if(nearest_node.index<joint_target_route.points.size()){
+        const v2d forward_vector=
+            joint_target_route.points[nearest_node.index+1]-nearest_node.point;
+        v2d ortho_vec=dot(forward_vector,nearest2current_vec)/
+                      nearest2current_norm_2*forward_vector;
+        forward_ratio=max(0.,dot(ortho_vec,forward_vector));
+        if(forward_ratio>0)forward_nearest=nearest_node.point+ortho_vec;
+      }
+      Joint &target_joint=this->path[target_index]->joint;
+      target_joint.route_index=nearest_node.value;
+      if(cost_function(forward_nearest,current_point)<=
+            cost_function(back_nearest,current_point)){
+        properPushBack(target_index,forward_nearest,cost_function,own_qt);
+        target_joint.index_in_route=nearest_node.index;
+        target_joint.forward_ratio=forward_ratio;
+      }else{
+        properPushBack(target_index,back_nearest,cost_function,own_qt);
+        target_joint.index_in_route=nearest_node.index-1;
+        target_joint.forward_ratio=1-forward_ratio;
+      }
+    }
   }
   //TODO: ant_reachablesはmapを使って、蟻毎に最も接合点に近い点を候補にする
+  //const auto &ant_reachables=qta.reachablePoints(
+  //    current_point[0],current_point[1],allowance_reachable_diameter,
+  //    allowance_reachable_diameter,filter);
 }
