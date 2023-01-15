@@ -1,5 +1,6 @@
 #include<random>
 #include<cmath>
+#include<algorithm>
 #include"Util.hpp"
 #include"Ant.hpp"
 #include"ACOTable.hpp"
@@ -138,14 +139,14 @@ pair<JointTarget,int> Ant::archedAdd(const int target_index,const Ant *base_ant,
   for(int i=0;i<add_start_index;i++)
     tracePushBack(target_index,base_points[i],cost_lambda,own_qt);
   //TODO: 他の経路へ気づいて、短絡するならさせてJointTargetと、終了時のindexを返す
+  const int add_range=add_main_target-add_start_index;
   for(int i=add_start_index;i<add_main_target;i++){
-    static const int add_range=add_main_target-add_start_index;
     properPushBack(target_index,
         base_points[i]+base_random_vec*sin(M_PI/2*(i-add_start_index)/add_range),
         min_point,max_point,cost_lambda,own_qt);
   }
+  const int add_range=original_add_end_index-add_main_target;
   for(int i=add_main_target;i<=actual_add_end_index;i++){
-    static const int add_range=original_add_end_index-add_main_target;
     properPushBack(target_index,
         base_points[i]+base_random_vec*
             sin(M_PI/2*(1+(double)(i-add_main_target)/add_range)),
@@ -206,19 +207,31 @@ optional<pair<const Ant*,Joint>> Ant::judgeJointTo(
   const SingleRoute &current_route=*(this->path[target_index]);
   const vector<v2d> &current_points=current_route.points;
   const v2d &current_point=current_points[current_points.size()-1];
-  const auto filter=[&current_point,reachable_radius](const v2d &p){
-    return circleFilter(p,current_point,reachable_radius);
+  const double allowance_reachable_radius=reachable_radius+__DBL_EPSILON__;
+  const double allowance_reachable_diameter=2*allowance_reachable_radius;
+  const auto filter=[&current_point,allowance_reachable_radius](const v2d &p){
+    return circleFilter(p,current_point,allowance_reachable_radius);
   };
   const auto &ant_reachables=qta.reachablePoints(
-      current_point[0],current_point[1],reachable_radius,reachable_radius,filter);
-  const auto &points_reachables=own_qt.reachablePoints(
-      current_point[0],current_point[1],reachable_radius,reachable_radius,filter);
-  vector<v2d> candidates;
-  candidates.reserve(ant_reachables.size()+points_reachables.size());
-  /*
-    TODO: points_reachablesは1つでもあった時点で終わりにしたいので、
-          先ずは最も近い辺を候補として探す。
-          その後、現在の最終点が候補の辺を超えていたらその点を削除し、短絡させる。
-  */
+      current_point[0],current_point[1],allowance_reachable_diameter,
+      allowance_reachable_diameter,filter);
+  vector<QuadTreeNode<const int>> &&points_reachables=own_qt.reachablePoints(
+      current_point[0],current_point[1],allowance_reachable_diameter,
+      allowance_reachable_diameter,filter);
+  //sort(points_reachables.begin(),points_reachables.end(),);
+  if(points_reachables.size()){
+    //NOTE: ここで乱数を加えたところが自分の既に確定している経路と衝突していないことを保証
+    const QuadTreeNode<const int> *tmp=&points_reachables[0];
+    double min_distance,tmp_distance;
+    for(int i=1;i<points_reachables.size();i++){
+      if(tmp->value!=target_index)continue;
+      tmp_distance=euclid(tmp->point,current_point);
+      if(tmp_distance<min_distance){
+        min_distance=tmp_distance;
+        tmp=&points_reachables[i];
+      }
+    }
+    //TODO: 最も近い中継点が関係する辺の内、最も近いところにくっつける
+  }
   //TODO: ant_reachablesはmapを使って、蟻毎に最も接合点に近い点を候補にする
 }

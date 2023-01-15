@@ -6,13 +6,20 @@
 #include"../main/QuadTree.hpp"
 using namespace std;
 
-void setTest(){
-  set<pair<int,const array<int,2>*>> s;
-  const array<int,2>hoge={1,2},fuga={1,2};
-  s.insert({1,&hoge});
-  s.erase({1,&fuga});
-  cout<<(s.empty()?"empty":"not empty")<<endl;
+void forStaticTest(int n){
+  for(int i=0;i<n;i++){
+    static int hoge=n;
+    if(i==n-1)cout<<hoge<<endl;
+  }
 }
+
+//void setTest(){
+//  set<pair<int,const array<int,2>*>> s;
+//  const array<int,2>hoge={1,2},fuga={1,2};
+//  s.insert({1,&hoge});
+//  s.erase({1,&fuga});
+//  cout<<(s.empty()?"empty":"not empty")<<endl;
+//}
 
 void quadTreeTest(){
   QuadTree<const int> qt({10,10},{100.0,100.0});
@@ -38,7 +45,9 @@ void quadTreeTest(){
 }
 
 int main(void){
-  quadTreeTest();
+  forStaticTest(1);
+  forStaticTest(100);
+  //quadTreeTest();
   //cout<<(uint)(UINT32_MAX>>32)<<endl;
   return 0;
 }
