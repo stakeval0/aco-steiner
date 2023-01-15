@@ -42,6 +42,11 @@ bool operator<(const QuadTreeNode<T> &n1,const QuadTreeNode<T> &n2){
   return n1.value<n2.value;
 }
 
+/*
+  NOTE: QuadTreeNodeの等価演算子を、座標の等価をポインタとして判断する案があったが、
+        面倒くさいし特に支障もないので差し当たって定義しない。
+*/
+
 // 4分木のモデル
 template<class T>
 QuadTree<T>::QuadTree(double width, double height, int level) {
