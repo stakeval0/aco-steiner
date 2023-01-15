@@ -9,7 +9,7 @@
 using namespace std;
 
 struct Joint{
-  int route_index,index_in_route;
+  int route_index=0,index_in_route;
   double forward_ratio;
 };
 
@@ -54,6 +54,13 @@ void Ant::constructFirstRoute(const ACOSteiner &world){
   //TODO: 初期の蟻の実装!
 }
 
+static bool isDepend(const vector<shared_ptr<SingleRoute>> &path,
+                       const uint parent,const uint child){
+  uint ret;
+  for(ret=child;ret&&ret!=parent;ret=path[ret]->joint.route_index);
+  return ret==parent;
+}
+
 void Ant::constructModifiedRoute(const ACOSteiner &world,ll current_time){
   const ACOTable &TABLE=world.getACOTable();
   double pheromone_sum=TABLE.sum(ACOTableColumn::PHEROMONE);
@@ -75,13 +82,17 @@ void Ant::constructModifiedRoute(const ACOSteiner &world,ll current_time){
   const auto &QTAV=world.getQuadTreeAntV();
   QuadTree<const int> own_qt(QTAV[0].minPoint(),QTAV[0].size());
   for(int i=0;i<this->path.size();i++)
-    if(i!=target_route_index&&this->path[i]->joint.route_index!=target_route_index)
+    if(!isDepend(this->path,target_route_index,i))
       own_qt.addRoute(this->path[i]->points,i);
 
   auto [joined_target,add_range]=
       addRandVecToOneRoute(world,base_ant,target_route_index,own_qt);
-  //TODO: 必要に応じて接合させる
-  //TODO: くっついてきている経路の接合点の移動を考慮する
+  /*
+    TODO: 乱数を加えた範囲の接合点の移動修正をする。
+          直接繋がっているものから順に接合していくのが良い。
+          間接的に繋がっているものも、
+          接合点とその直前の中継点の辺に繋がっている時は修正される。
+  */
   //他の蟻と経路を接合させた時の接合点を処理するためには、ここで接合点の移動を考慮した方が都合が良い
 }
 
