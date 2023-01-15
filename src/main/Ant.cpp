@@ -71,7 +71,16 @@ void Ant::constructModifiedRoute(const ACOSteiner &world,ll current_time){
       //TODO: 間隔と接合点を考慮しながら経路をコピーするコードを書く
     }
   }
-  addRandVecToOneRoute(world,base_ant,target_route_index);
+  const auto &QTAV=world.getQuadTreeAntV();
+  QuadTree<const int> own_qt(QTAV[0].minPoint(),QTAV[0].size());
+  for(int i=0;i<this->path.size();i++)
+    if(i!=target_route_index&&this->path[i]->joint.route_index!=target_route_index)
+      own_qt.addRoute(this->path[i]->points,i);
+
+  addRandVecToOneRoute(world,base_ant,target_route_index,own_qt);
+  //TODO: 必要に応じて接合させる
+  //TODO: くっついてきている経路の接合点の移動を考慮する
+  //他の蟻と経路を接合させた時の接合点を処理するためには、ここで接合点の移動を考慮した方が都合が良い
 }
 
 static double moveStandardDeviation(double distance_c2j,double basic_move_ratio,
@@ -86,7 +95,8 @@ enum class JointTarget{
 };
 
 JointTarget Ant::addRandVecToOneRoute(const ACOSteiner &world, const Ant *base_ant,
-                               const int target_index) {
+                                      const int target_index,
+                                      QuadTree<const int> &own_qt) {
   this->path[target_index].reset(new SingleRoute);
   const ACOTable &TABLE=world.getACOTable();
   const auto &BASE_ROUTE=base_ant->path[target_index]->points;
@@ -103,18 +113,16 @@ JointTarget Ant::addRandVecToOneRoute(const ACOSteiner &world, const Ant *base_a
   const double randvec_norm=norm_unit_dist(random_engine)*move_standard_deviation;
   array<double,2> base_random_vec{randvec_norm,0};
   rotate(base_random_vec,2*M_PI*uniform_unit_dist(random_engine));
-  archedAdd(target_index,base_ant,base_random_vec,world);
+  archedAdd(target_index,base_ant,base_random_vec,world,own_qt);
 }
 
-JointTarget Ant::archedAdd(const int target_index,const Ant *base_ant,v2d base_random_vec,const ACOSteiner &world){
+pair<JointTarget,int> Ant::archedAdd(const int target_index,const Ant *base_ant,
+                                     v2d base_random_vec,const ACOSteiner &world,
+                                     QuadTree<const int> &own_qt){
   auto &target_points=this->path[target_index]->points,
        &base_points=base_ant->path[target_index]->points;
   const QuadTreeAnt &QTA=world.getQuadTreeAnt(target_index);
-  QuadTree<const int> own_qt(QTA.minPoint(),QTA.size());
-  for(int i=0;i<this->path.size();i++)
-    if(i!=target_index&&this->path[i]->joint.route_index!=target_index)
-      own_qt.addRoute(this->path[i]->points,i);
-
+  
   const int add_main_target=random_engine()%base_points.size();
   const int arched_add_range=(random_engine()%(base_points.size()/2))*2+1;//奇数にしたい
   const int add_start_index=max(0,add_main_target-arched_add_range);
@@ -127,56 +135,90 @@ JointTarget Ant::archedAdd(const int target_index,const Ant *base_ant,v2d base_r
   auto cost_lambda=[&world](const v2d &v1,const v2d &v2){
     return world.calcCost(v1,v2);
   };
-  //FIXME: 範囲外に出ないことが保証されているのでproperPushBack()する意味が薄い
   for(int i=0;i<add_start_index;i++)
-    tracePushBack(target_index,base_points[i],cost_lambda);
-  //TODO: 接合点の移動を考慮する
+    tracePushBack(target_index,base_points[i],cost_lambda,own_qt);
+  //TODO: 他の経路へ気づいて、短絡するならさせてJointTargetと、終了時のindexを返す
   for(int i=add_start_index;i<add_main_target;i++){
     static const int add_range=add_main_target-add_start_index;
     properPushBack(target_index,
         base_points[i]+base_random_vec*sin(M_PI/2*(i-add_start_index)/add_range),
-        min_point,max_point,cost_lambda);
+        min_point,max_point,cost_lambda,own_qt);
   }
   for(int i=add_main_target;i<=actual_add_end_index;i++){
     static const int add_range=original_add_end_index-add_main_target;
     properPushBack(target_index,
         base_points[i]+base_random_vec*
             sin(M_PI/2*(1+(double)(i-add_main_target)/add_range)),
-        min_point,max_point,cost_lambda);
+        min_point,max_point,cost_lambda,own_qt);
   }
   for(int i=actual_add_end_index+1;i<base_points.size();i++)
-    tracePushBack(target_index,base_points[i],cost_lambda);
+    tracePushBack(target_index,base_points[i],cost_lambda,own_qt);
 }
 
-void Ant::tracePushBack(const int target_index,const v2d &e,const function<double(const v2d&,const v2d&)> &cost_function){
+void Ant::tracePushBack(
+    const int target_index,const v2d &e,
+    const function<double(const v2d&,const v2d&)> &cost_function,
+    QuadTree<const int> &own_qt){
   SingleRoute &route=*(this->path[target_index]);
   auto &points=route.points;
   const v2d &last_point=points[points.size()-1];
+  own_qt.addPoint(e,points.size(),target_index);
   points.push_back(e);
   route.cost+=cost_function(last_point,e);
   route.length+=euclid(last_point,e);
 }
 
-void Ant::properPushBack(const int target_index,const v2d &e,
+void Ant::properPushBack(
+    const int target_index,const v2d &e,
     const v2d &min_point,const v2d &max_point,
-    const function<double(const v2d&,const v2d&)> &cost_function){
+    const function<double(const v2d&,const v2d&)> &cost_function,
+    QuadTree<const int> &own_qt){
   SingleRoute &route=*(this->path[target_index]);
-  auto &v=route.points;
-  const v2d &last_point=v[v.size()-1];
+  auto &points=route.points;
+  const v2d &last_point=points[points.size()-1];
   v2d p{max(min_point[0],e[0]),max(min_point[1],e[1])};
   p[0]=min(p[0],max_point[0]);p[1]=min(p[1],max_point[1]);
   const double distance=euclid(last_point,p);
   if(distance<this->MIN_DISTANCE)return;//NOTE: 簡単のため、近い時は重心を取るのではなくて追加しないようにした
   if(distance<=this->MAX_DISTANCE){//this->MIN_DISTANCE<=distanceは保証されている
-    v.push_back(p);
+    own_qt.addPoint(p,points.size(),target_index);
+    points.push_back(p);
   }else{
     const double ideal_complement_distance=mean(this->MIN_DISTANCE,this->MAX_DISTANCE);
     const int vector_num=ceil(distance/ideal_complement_distance);//NOTE: round等だと距離条件が満たされない場合がある
     for(int i=1;i<=vector_num;i++){
-      v.push_back((double)i/vector_num*p);
+      own_qt.addPoint(p,points.size(),target_index);
+      points.push_back((double)i/vector_num*p);
     }
   }
   //TODO: 自身の経路が交差していたら短絡させる
   route.cost+=cost_function(last_point,p);
   route.length+=distance;
+}
+
+inline static bool circleFilter(const v2d &v,const v2d &c,double radius){
+  return euclid(v-c)<=radius;
+}
+
+optional<pair<const Ant*,Joint>> Ant::judgeJointTo(
+    const int target_index,const Ant* base_ant,const QuadTree<const Ant*> &qta,
+    const QuadTree<const int> &own_qt,const double reachable_radius){
+  const SingleRoute &current_route=*(this->path[target_index]);
+  const vector<v2d> &current_points=current_route.points;
+  const v2d &current_point=current_points[current_points.size()-1];
+  const auto filter=[&current_point,reachable_radius](const v2d &p){
+    return circleFilter(p,current_point,reachable_radius);
+  };
+  const auto &ant_reachables=qta.reachablePoints(
+      current_point[0],current_point[1],reachable_radius,reachable_radius,filter);
+  const auto &points_reachables=own_qt.reachablePoints(
+      current_point[0],current_point[1],reachable_radius,reachable_radius,filter);
+  vector<v2d> candidates;
+  candidates.reserve(ant_reachables.size()+points_reachables.size());
+  /*
+    TODO: points_reachablesは1つでもあった時点で終わりにしたいので、
+          先ずは最も近い辺を候補として探す。
+          その後、現在の最終点が候補の辺を超えていたらその点を削除し、短絡させる。
+  */
+  //TODO: ant_reachablesはmapを使って、蟻毎に最も接合点に近い点を候補にする
 }

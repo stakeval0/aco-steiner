@@ -118,6 +118,7 @@ inline double ACOSteiner::getBasicMoveRatio() const {return this->basic_move_rat
 inline ll ACOSteiner::getTableCapacity() const {return this->table->getCapacity();}
 
 inline const ACOTable& ACOSteiner::getACOTable() const {return *this->table;}
+inline const vector<QuadTreeAnt>& ACOSteiner::getQuadTreeAntV() const {return this->qtworld;}
 inline const QuadTreeAnt& ACOSteiner::getQuadTreeAnt(int index) const {return this->qtworld[index];}
 
 //以下でprivate関数

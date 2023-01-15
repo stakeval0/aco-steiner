@@ -44,6 +44,7 @@ class ACOSteiner{
     double getBasicMoveRatio() const;
     ll getTableCapacity() const;
     const ACOTable& getACOTable() const;
+    const vector<QuadTreeAnt>& getQuadTreeAntV() const;
     const QuadTreeAnt& getQuadTreeAnt(int index) const;
 };
 
