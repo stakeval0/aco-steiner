@@ -118,20 +118,21 @@ void Ant::constructModifiedRoute(const ACOSteiner &world,ll current_time){
   */
   //他の蟻と経路を接合させた時の接合点を処理するためには、ここで接合点の移動を考慮した方が都合が良い
   vector<int> &&after_depend=dependTree(this->path,target_route_index);
-  vector<int> arange(after_depend.size());
-  for(int i=0;i<arange.size();i++)arange[i]=i;
-  vector<vector<int>&> check_order;
-  check_order[0]=after_depend;check_order[1]=arange;
+  vector<int> check_order(after_depend.size());
+  for(int i=0;i<check_order.size();i++)check_order[i]=i;
   sort(check_order.begin(),check_order.end(),
-       [](const auto &a,const auto &b){return a[0]<b[0]});
+       [&after_depend](const int &a,const int &b){
+         return after_depend[a]<after_depend[b];
+       });
   int own_order;
-  for(own_order=0;own_order<check_order.size()&&check_order[own_order][0]<0;
-      own_order++);//TODO: ここを二分探索にしたい
+  for(own_order=0;
+      own_order<check_order.size()&&after_depend[check_order[own_order]]<0;
+      own_order++);//OPTIMIZE: ここを二分探索にしたい
   stack<uint> additional_decided_route;
-  for(int i=own_order+1;i<check_order[i][0]==1;i++){
-    const uint current_index=check_order[i][1];
+  for(int i=own_order+1;i<check_order.size()==1;i++){
+    const uint current_index=check_order[i];
     const Joint &joint=this->path[current_index]->joint;
-    const auto &joint_points=this->path[check_order[joint.route_index][1]]->points;
+    const auto &joint_points=this->path[check_order[joint.route_index]]->points;
     const v2d forward_vec=joint_points[joint.index_in_route+1]-
                           joint_points[joint.index_in_route];
     const v2d joint_point=joint_points[joint.index_in_route]+
