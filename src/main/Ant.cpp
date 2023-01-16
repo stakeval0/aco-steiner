@@ -62,9 +62,8 @@ static bool isDepend(const vector<shared_ptr<SingleRoute>> &path,
   return ret==parent;
 }
 
-//TODO: 独立なら-1、依存しているならその階数を保存するvector<int>を返す関数を作成する
-//      これを使い、iotaと合わせてsortすれば簡単に依存関係の優先順位を考慮できる
-vector<int> dependTree(const vector<int> &path,
+//独立なら-1、依存しているならその階数を保存するvector<int>を返す関数
+vector<int> dependTree(const vector<shared_ptr<SingleRoute>> &path,
                        const uint parent){
   vector<int> ret(path.size(),-2);//未訪問なら-2
   ret[0]=-1;ret[parent]=0;
@@ -72,7 +71,7 @@ vector<int> dependTree(const vector<int> &path,
     if(ret[i]!=-2)continue;
     stack<uint> s;
     uint tmp;
-    for(tmp=i;ret[tmp]==-2;tmp=path[tmp]){
+    for(tmp=i;ret[tmp]==-2;tmp=path[tmp]->joint.route_index){
       s.push(tmp);ret[tmp]=-1;
     }
     if(ret[tmp]<0)continue;
@@ -104,19 +103,56 @@ void Ant::constructModifiedRoute(const ACOSteiner &world,ll current_time){
   }
   const auto &QTAV=world.getQuadTreeAntV();
   QuadTree<const int> own_qt(QTAV[0].minPoint(),QTAV[0].size());
+  const vector<int> init_depend=dependTree(this->path,target_route_index);
   for(int i=0;i<this->path.size();i++)
-    if(!isDepend(this->path,target_route_index,i))
+    if(init_depend[i]<0)
       own_qt.addRoute(this->path[i]->points,i);
 
   auto [joined_target,add_range]=
       addRandVecToOneRoute(world,base_ant,target_route_index,own_qt);
   /*
-    TODO: 乱数を加えた範囲の接合点の移動修正をする。
+    NOTE: 乱数を加えた範囲の接合点の移動修正をする。
           直接繋がっているものから順に接合していくのが良い。
           間接的に繋がっているものも、
           接合点とその直前の中継点の辺に繋がっている時は修正される。
   */
   //他の蟻と経路を接合させた時の接合点を処理するためには、ここで接合点の移動を考慮した方が都合が良い
+  vector<int> &&after_depend=dependTree(this->path,target_route_index);
+  vector<int> arange(after_depend.size());
+  for(int i=0;i<arange.size();i++)arange[i]=i;
+  vector<vector<int>&> check_order;
+  check_order[0]=after_depend;check_order[1]=arange;
+  sort(check_order.begin(),check_order.end(),
+       [](const auto &a,const auto &b){return a[0]<b[0]});
+  int own_order;
+  for(own_order=0;own_order<check_order.size()&&check_order[own_order][0]<0;
+      own_order++);//TODO: ここを二分探索にしたい
+  stack<uint> additional_decided_route;
+  for(int i=own_order+1;i<check_order[i][0]==1;i++){
+    const uint current_index=check_order[i][1];
+    const Joint &joint=this->path[current_index]->joint;
+    const auto &joint_points=this->path[check_order[joint.route_index][1]]->points;
+    const v2d forward_vec=joint_points[joint.index_in_route+1]-
+                          joint_points[joint.index_in_route];
+    const v2d joint_point=joint_points[joint.index_in_route]+
+                          joint.forward_ratio*forward_vec;
+    const auto &current_points=this->path[current_index]->points;
+    if(euclid(joint_point,current_points[current_points.size()-1])<__DBL_EPSILON__){
+      additional_decided_route.push(i);continue;
+    }
+    while(!additional_decided_route.empty()){
+      uint tmp=additional_decided_route.top();additional_decided_route.pop();
+      own_qt.addRoute(this->path[tmp]->points,tmp);
+    }
+    auto cost_lambda=[&world](const v2d &v1,const v2d &v2){
+      return world.calcCost(v1,v2);
+    };
+    for(int j=0;j<current_points.size();i++){
+      const Ant* tmp=
+          joinToOwn(current_index,own_qt,world.getMaxDistance(),cost_lambda);
+      if(tmp)break;
+    }
+  }
 }
 
 static double moveStandardDeviation(double distance_c2j,double basic_move_ratio,
@@ -251,7 +287,7 @@ const Ant* Ant::judgeJointTo(
     return circleFilter(p,current_point,allowance_reachable_radius);
   };
   const auto own_join_result=
-      jointToOwn(target_index,own_qt,reachable_radius,cost_function);
+      joinToOwn(target_index,own_qt,reachable_radius,cost_function);
   if(own_join_result)return own_join_result;
   /*
     TODO: ant_reachablesはmapを使って、蟻毎に最も接合点に近い点を候補にする
@@ -265,7 +301,7 @@ const Ant* Ant::judgeJointTo(
 }
 
 //FIXME: 最近傍辺による方式に変更する
-const Ant* Ant::jointToOwn(
+const Ant* Ant::joinToOwn(
     const int target_index,QuadTree<const int> &own_qt,
     const double reachable_radius,
     const function<double(const v2d&,const v2d&)> &cost_function){

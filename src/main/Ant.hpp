@@ -36,7 +36,7 @@ class Ant{
       const int target_index,const QuadTreeNode<T> &nearest_node,
       const function<double(const v2d&,const v2d&)> &cost_function,
       QuadTree<const int> &own_qt);
-    const Ant* jointToOwn(
+    const Ant* joinToOwn(
         const int target_index,QuadTree<const int> &own_qt,
         const double reachable_radius,
         const function<double(const v2d&,const v2d&)> &cost_function);
