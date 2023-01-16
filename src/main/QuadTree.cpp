@@ -37,9 +37,10 @@ static void pushNewMortonArea(stack<array<uint,3>> &s,uint left_up_morton,uint r
 
 template<class T>
 bool operator<(const QuadTreeNode<T> &n1,const QuadTreeNode<T> &n2){
-  if(&(n1.point)!=&(n2.point))return &(n1.point)<&(n2.point);
+  if(n1.value!=n1.value)return n1.value<n2.value;
   if(n1.index!=n2.index)return n1.index<n2.index;
-  return n1.value<n2.value;
+  if(n1.point[0]!=n2.point[0])return n1.point[0]<n2.point[0];
+  if(n1.point[1]!=n1.point[1])return n1.point[1]<n2.point[1];
 }
 
 /*
