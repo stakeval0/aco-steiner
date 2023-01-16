@@ -1,6 +1,7 @@
 #include<random>
 #include<cmath>
 #include<algorithm>
+#include<stack>
 #include"Util.hpp"
 #include"Ant.hpp"
 #include"ACOTable.hpp"
@@ -59,6 +60,28 @@ static bool isDepend(const vector<shared_ptr<SingleRoute>> &path,
   uint ret;
   for(ret=child;ret&&ret!=parent;ret=path[ret]->joint.route_index);
   return ret==parent;
+}
+
+//TODO: 独立なら-1、依存しているならその階数を保存するvector<int>を返す関数を作成する
+//      これを使い、iotaと合わせてsortすれば簡単に依存関係の優先順位を考慮できる
+vector<int> dependTree(const vector<int> &path,
+                       const uint parent){
+  vector<int> ret(path.size(),-2);//未訪問なら-2
+  ret[0]=-1;ret[parent]=0;
+  for(int i=0;i<ret.size();i++){
+    if(ret[i]!=-2)continue;
+    stack<uint> s;
+    uint tmp;
+    for(tmp=i;ret[tmp]==-2;tmp=path[tmp]){
+      s.push(tmp);ret[tmp]=-1;
+    }
+    if(ret[tmp]<0)continue;
+    for(uint count=ret[tmp]+1;!s.empty();count++){
+      tmp=s.top();s.pop();
+      ret[tmp]=count;
+    }
+  }
+  return ret;
 }
 
 void Ant::constructModifiedRoute(const ACOSteiner &world,ll current_time){
@@ -241,6 +264,7 @@ const Ant* Ant::judgeJointTo(
   return nullptr;//どちらにも接合しない時に返す
 }
 
+//FIXME: 最近傍辺による方式に変更する
 const Ant* Ant::jointToOwn(
     const int target_index,QuadTree<const int> &own_qt,
     const double reachable_radius,
@@ -274,6 +298,14 @@ const Ant* Ant::jointToOwn(
     return nullptr;
   joinCloseToNearestNode(target_index,nearest_node,cost_function,own_qt);
   return this;
+}
+
+static bool isCross(const v2d &current_point,const v2d &last_point,
+                    const v2d &nearest_point,const v2d &other_side_point){
+  const v2d l2c_vec=current_point-last_point,
+            l2n_vec=nearest_point-last_point,
+            l2o_vec=other_side_point-last_point;
+  return cross(l2c_vec,l2n_vec)*cross(l2c_vec,l2o_vec)<=0;
 }
 
 template<class T>
