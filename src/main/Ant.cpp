@@ -52,15 +52,40 @@ static uniform_real_distribution<> uniform_unit_dist(0,1);
 static normal_distribution<> norm_unit_dist(0,1);
 
 void Ant::constructFirstRoute(const ACOSteiner &world){
-  //TODO: 初期の蟻の実装!
+  //初期の蟻の実装!
   const auto &connect_points=world.getConnectPoints();
   const auto &QTA0=world.getQuadTreeAnt(0);
   auto cost_lambda=[&world](const v2d &v1,const v2d &v2){
     return world.calcCost(v1,v2);
   };
+  this->path.resize(connect_points.size()-1);
   for(int i=0;i<this->path.size();i++)this->path[i].reset(new SingleRoute);
-  this->path[0]->points.push_back(connect_points[0]);
-  properPushBack(0,connect_points[1],cost_lambda,QTA0.minPoint(),QTA0.size());
+  this->path[0]->points.push_back(connect_points[1]);
+  properPushBack(0,connect_points[0],cost_lambda,QTA0.minPoint(),QTA0.size());
+  for(int i=1;i<this->path.size();i++){
+    this->path[i]->points.push_back(connect_points[i+1]);
+    v2d nearest_point=connect_points[0];
+    double min_distance=euclid(nearest_point,connect_points[i]);
+    uint nearest_route_index,index_in_nearest_route;
+    for(int j=0;j<i;i++){
+      const auto &joint_target_points=this->path[j]->points;
+      for(int k=0;k<joint_target_points.size();k++){
+        double distance=euclid(joint_target_points[k],connect_points[i]);
+        if(min_distance>distance){
+          min_distance=distance;
+          nearest_point=joint_target_points[k];
+          nearest_route_index=j;
+          index_in_nearest_route=k;
+        }
+      }
+    }
+    //NOTE: 色々と面倒くさくなったので取り敢えず最近傍点に繋げる
+    properPushBack(i,nearest_point,cost_lambda,QTA0.minPoint(),QTA0.size());
+    Joint &current_joint=this->path[i]->joint;
+    current_joint.route_index=nearest_route_index;
+    current_joint.index_in_route=index_in_nearest_route;
+    current_joint.forward_ratio=0;
+  }
 }
 
 static bool isDepend(const vector<shared_ptr<SingleRoute>> &path,
