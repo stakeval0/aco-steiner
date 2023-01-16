@@ -27,6 +27,10 @@ class Ant{
         const int target_index,const v2d &e,
         const function<double(const v2d&,const v2d&)> &cost_function,
         QuadTree<const int> &own_qt);
+    void Ant::properPushBack(
+        const int target_index,const v2d &e,
+        const function<double(const v2d&,const v2d&)> &cost_function,
+        const v2d &min_point,const v2d &size);
     void properPushBack(
         const int target_index,const v2d &e,
         const function<double(const v2d&,const v2d&)> &cost_function,
@@ -37,12 +41,13 @@ class Ant{
       const function<double(const v2d&,const v2d&)> &cost_function,
       QuadTree<const int> &own_qt);
     const Ant* joinToOwn(
-        const int target_index,QuadTree<const int> &own_qt,
+        const int route_index,const int index_in_route,QuadTree<const int> &own_qt,
         const double reachable_radius,
         const function<double(const v2d&,const v2d&)> &cost_function);
-    const Ant* judgeJointTo(
-        const int target_index,const Ant* base_ant,const QuadTree<const Ant*> &QTA,
-        QuadTree<const int> &own_qt,const double reachable_radius,
+    const Ant* judgeJoinTo(
+        const int route_index,const int first_index_in_route,const Ant* base_ant,
+        const QuadTree<const Ant*> &QTA,QuadTree<const int> &own_qt,
+        const double reachable_radius,
         const function<double(const v2d&,const v2d&)> &cost_function);
     pair<const Ant*,const array<int,2>> archedAdd(const int target_index,const Ant *base_ant,
                                     v2d base_random_vec,const ACOSteiner &world,
