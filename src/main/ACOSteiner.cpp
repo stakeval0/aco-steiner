@@ -46,14 +46,14 @@ void ACOSteiner::search(){
   Ant *new_ant=new Ant(*this);
   this->table->insert(new_ant);
   //4分木の世界へ登録
-  for(int i=0;i<new_ant->numOfPoints();i++){
-    this->qtworld[i].addRoute(new_ant->getRelayPointsOnRoute(i),new_ant);
+  for(int i=0;i<new_ant->routeNum();i++){
+    this->qtworld[i].addRoute(new_ant->getRoute(i),new_ant);
   }
   //最悪解の削除
   const Ant *dropout_ant=this->table->dropout();
   if(dropout_ant){
-    for(int i=0;i<dropout_ant->numOfPoints();i++){
-      this->qtworld[i].removeRoute(dropout_ant->getRelayPointsOnRoute(i),dropout_ant);
+    for(int i=0;i<dropout_ant->routeNum();i++){
+      this->qtworld[i].removeRoute(dropout_ant->getRoute(i),dropout_ant);
     }
     //設計段階でここでdeleteすれば必要十分である事が証明されているが、後でスマートポインタにしても良いかも知れない
     delete dropout_ant;

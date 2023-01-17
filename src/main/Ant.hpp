@@ -14,7 +14,6 @@ template<class T> class QuadTree;
 template<class T> struct QuadTreeNode;
 struct Joint;
 struct SingleRoute;
-enum class JointTarget;
 
 class Ant{
   protected:
@@ -27,7 +26,7 @@ class Ant{
         const int target_index,const v2d &e,
         const function<double(const v2d&,const v2d&)> &cost_function,
         QuadTree<const int> &own_qt);
-    void Ant::properPushBack(
+    void properPushBack(
         const int target_index,const v2d &e,
         const function<double(const v2d&,const v2d&)> &cost_function,
         const v2d &min_point,const v2d &size);
@@ -64,8 +63,8 @@ class Ant{
     double pheromone() const;
     double cost() const;
     double length() const;
-    const vector<v2d>& getRelayPointsOnRoute(int index) const;
-    int numOfPoints() const;
+    const vector<v2d>& getRoute(int index) const;
+    int routeNum() const;
 };
 
 #endif//_ANT_HPP_

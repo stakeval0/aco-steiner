@@ -34,11 +34,11 @@ Ant::Ant(const ACOSteiner &world) : BIRTH_TIME(world.getTime()),
   this->pheromone_v=this->total_cost;
 }
 
-inline const vector<v2d>& Ant::getRelayPointsOnRoute(int index) const {
+inline const vector<v2d>& Ant::getRoute(int index) const {
   return this->path[index]->points;
 }
 
-inline int Ant::numOfPoints() const {return this->path.size();}
+inline int Ant::routeNum() const {return this->path.size();}
 inline double Ant::cost() const {return this->total_cost;}
 inline double Ant::length() const {return this->total_length;}
 inline void Ant::evaporate(double evaporation_cofficient) const {this->pheromone_v*=evaporation_cofficient;}
@@ -206,8 +206,8 @@ void Ant::constructModifiedRoute(const ACOSteiner &world,ll current_time){
         }
       }
     }
-    QuadTreeNode<int> nearest_node{nearest_point,nearest_route_index,
-                                   index_in_nearest_route};
+    QuadTreeNode<const uint> nearest_node{nearest_point,nearest_route_index,
+                                          index_in_nearest_route};
     joinCloseToNearestNode(current_index,nearest_node,cost_lambda,own_qt);
   }
 }

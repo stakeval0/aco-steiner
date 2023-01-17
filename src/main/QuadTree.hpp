@@ -12,9 +12,9 @@ using namespace std;
 template<class T>
 struct QuadTreeNode{
   const array<double,2> &point;
-  int index;
+  uint index;
   T value;
-  QuadTreeNode(const array<double,2> &point,int index,T value)
+  QuadTreeNode(const array<double,2> &point,uint index,T value)
     : point(point),index(index),value(value){}
 };
 
