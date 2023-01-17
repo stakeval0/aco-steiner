@@ -3,8 +3,9 @@
 #include<array>
 #include<set>
 #include<functional>
+#include"../tools/json.hpp"
 using namespace std;
-using ll=long long;
+using json=nlohmann::json;
 
 class Ant;
 
@@ -17,16 +18,19 @@ enum class ACOTableColumn{
 //最良と最悪どちらも取り出したいのでmultiset方式
 class ACOTable : public multiset<const Ant*,function<bool(const Ant*,const Ant*)>> {
   private:
-    ll max_size=16;
+    long long max_size=16;
   public:
     ACOTable();
-    void setCapacity(ll size);
-    ll getCapacity() const;
+    void setCapacity(long long size);
+    long long getCapacity() const;
     const Ant* dropout();
     double sum(ACOTableColumn target) const;
     double mean(ACOTableColumn target) const;
     double variance(ACOTableColumn target) const;
     double stdev(ACOTableColumn target) const;
+    json getJson() const;
+    json getJson(const int begin,const int end) const;
+    json getElementJson(const int index) const;
     //double pheromoneSum() const;//出来ればupdatePheromone()時に計算して変数として保存しておきたい
 };
 

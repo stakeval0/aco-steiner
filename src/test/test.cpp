@@ -4,7 +4,8 @@
 #include<random>
 #include<set>
 #include<stack>
-#include"../main/QuadTree.hpp"
+#include"../tools/json.hpp"
+//#include"../main/QuadTree.hpp"
 using namespace std;
 
 vector<int> dependTree(const vector<int> &path,
@@ -51,6 +52,7 @@ void dependTreeTest(){
 //  cout<<(s.empty()?"empty":"not empty")<<endl;
 //}
 
+/*
 void quadTreeTest(){
   QuadTree<const int> qt({10,10},{100.0,100.0});
   vector<vector<array<double,2>>>routes(100,vector<array<double,2>>(100));
@@ -73,12 +75,26 @@ void quadTreeTest(){
     printf("%g,%g\n",p[0],p[1]);
   }
 }
+*/
+
+using json=nlohmann::json;
+void jsonTest(){
+  vector<array<double,2>> data(5);
+  for(int i=0;i<data.size();i++){
+    data[i][0]=2*i;data[i][1]=data[i][0]+1;
+  }
+  json j=json::array();
+  j.emplace_back(data);
+  j.emplace_back(data);
+  cout<<j<<endl;
+}
 
 int main(void){
   //forStaticTest(1);
   //forStaticTest(100);
   //quadTreeTest();
   //cout<<(uint)(UINT32_MAX>>32)<<endl;
-  dependTreeTest();
+  //dependTreeTest();
+  jsonTest();
   return 0;
 }
