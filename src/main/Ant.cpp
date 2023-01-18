@@ -2,6 +2,7 @@
 #include<cmath>
 #include<algorithm>
 #include<stack>
+#include<iostream>
 #include"Util.hpp"
 #include"Ant.hpp"
 #include"ACOTable.hpp"
@@ -23,7 +24,7 @@ struct SingleRoute{
 Ant::Ant(const ACOSteiner &world) : BIRTH_TIME(world.getTime()),
                                     MIN_DISTANCE(world.getMinDistance()),
                                     MAX_DISTANCE(world.getMaxDistance()) {
-  this->path.reserve(world.getConnectPoints().size());
+  this->path.resize(world.getQuadTreeAntV().size());
   if(world.getACOTable().size())constructModifiedRoute(world,this->BIRTH_TIME);
   else constructFirstRoute(world);
   this->total_cost=this->total_length=0;
@@ -31,18 +32,17 @@ Ant::Ant(const ACOSteiner &world) : BIRTH_TIME(world.getTime()),
     this->total_cost+=this->path[i]->cost;
     this->total_length+=this->path[i]->length;
   }
-  this->pheromone_v=this->total_cost;
+  this->pheromone_v=world.getPheromoneCofficient()/this->total_cost;
+  for(int i=0;i<this->path.size();i++){
+    if(this->path[i]->points.size()<=1){
+      cout<<"hoge"<<endl;
+    }
+  }
 }
 
-inline const vector<v2d>& Ant::getRoute(int index) const {
+const vector<v2d>& Ant::getRoute(int index) const {
   return this->path[index]->points;
 }
-
-inline int Ant::routeNum() const {return this->path.size();}
-inline double Ant::cost() const {return this->total_cost;}
-inline double Ant::length() const {return this->total_length;}
-inline void Ant::evaporate(double evaporation_cofficient) const {this->pheromone_v*=evaporation_cofficient;}
-inline double Ant::pheromone() const {return this->pheromone_v;}
 
 //以下でprivate関数
 
@@ -58,19 +58,23 @@ void Ant::constructFirstRoute(const ACOSteiner &world){
   auto cost_lambda=[&world](const v2d &v1,const v2d &v2){
     return world.calcCost(v1,v2);
   };
-  this->path.resize(connect_points.size()-1);
   for(int i=0;i<this->path.size();i++)this->path[i].reset(new SingleRoute);
-  this->path[0]->points.push_back(connect_points[1]);
+  SingleRoute &ground_route=*this->path[0];
+  ground_route.points.push_back(connect_points[1]);
   properPushBack(0,connect_points[0],cost_lambda,QTA0.minPoint(),QTA0.size());
+  Joint &ground_joint=ground_route.joint;
+  ground_joint.route_index=0;ground_joint.index_in_route=ground_route.points.size()-1;
+  ground_joint.forward_ratio=0;
   for(int i=1;i<this->path.size();i++){
-    this->path[i]->points.push_back(connect_points[i+1]);
+    const auto connect_point=connect_points[i+1];
+    this->path[i]->points.push_back(connect_point);
     v2d nearest_point=connect_points[0];
-    double min_distance=euclid(nearest_point,connect_points[i]);
-    uint nearest_route_index,index_in_nearest_route;
-    for(int j=0;j<i;i++){
+    double min_distance=euclid(nearest_point,connect_point);
+    uint nearest_route_index=0,index_in_nearest_route=0;
+    for(int j=0;j<i;j++){
       const auto &joint_target_points=this->path[j]->points;
       for(int k=0;k<joint_target_points.size();k++){
-        double distance=euclid(joint_target_points[k],connect_points[i]);
+        double distance=euclid(joint_target_points[k],connect_point);
         if(min_distance>distance){
           min_distance=distance;
           nearest_point=joint_target_points[k];
@@ -88,19 +92,12 @@ void Ant::constructFirstRoute(const ACOSteiner &world){
   }
 }
 
-static bool isDepend(const vector<shared_ptr<SingleRoute>> &path,
-                       const uint parent,const uint child){
-  uint ret;
-  for(ret=child;ret&&ret!=parent;ret=path[ret]->joint.route_index);
-  return ret==parent;
-}
-
 //独立なら-1、依存しているならその階数を保存するvector<int>を返す関数
 vector<int> dependTree(const vector<shared_ptr<SingleRoute>> &path,
                        const uint parent){
   vector<int> ret(path.size(),-2);//未訪問なら-2
   ret[0]=-1;ret[parent]=0;
-  for(int i=0;i<ret.size();i++){
+  for(int i=1;i<ret.size();i++){
     if(ret[i]!=-2)continue;
     stack<uint> s;
     uint tmp;
@@ -134,10 +131,11 @@ void Ant::constructModifiedRoute(const ACOSteiner &world,ll current_time){
       //TODO: 間隔と接合点を考慮しながら経路をコピーするコードを書く
       __builtin_unreachable();//NOTE: 実装したら消す
     }
+    
   }
   const auto &QTAV=world.getQuadTreeAntV();
   QuadTree<const int> own_qt(QTAV[0].minPoint(),QTAV[0].size());
-  const vector<int> init_depend=dependTree(this->path,target_route_index);
+  const vector<int> &init_depend=dependTree(base_ant->path,target_route_index);
   for(int i=0;i<this->path.size();i++)
     if(init_depend[i]<0)
       own_qt.addRoute(this->path[i]->points,i);
@@ -185,15 +183,15 @@ void Ant::constructModifiedRoute(const ACOSteiner &world,ll current_time){
       return world.calcCost(v1,v2);
     };
     const Ant* tmp;
-    for(int j=0;j<current_points.size();i++){
-      tmp=joinToOwn(current_index,i,own_qt,world.getMaxDistance(),cost_lambda);
+    for(int j=0;j<current_points.size();j++){
+      tmp=joinToOwn(current_index,j,own_qt,world.getMaxDistance(),cost_lambda);
       if(tmp)break;
     }
     if(tmp)continue;
     const v2d &end_point=current_points[current_points.size()-1];
     v2d &nearest_point=this->path[0]->points[0];
     double min_distance=euclid(nearest_point,end_point);
-    uint nearest_route_index,index_in_nearest_route;
+    uint nearest_route_index=0,index_in_nearest_route=0;
     for(int j=0;j<i;j++){
       const auto &joint_target_points=this->path[check_order[j]]->points;
       for(int k=0;k<joint_target_points.size();k++){
@@ -206,8 +204,8 @@ void Ant::constructModifiedRoute(const ACOSteiner &world,ll current_time){
         }
       }
     }
-    QuadTreeNode<const uint> nearest_node{nearest_point,nearest_route_index,
-                                          index_in_nearest_route};
+    QuadTreeNode<const uint> nearest_node{nearest_point,index_in_nearest_route,
+                                          nearest_route_index};
     joinCloseToNearestNode(current_index,nearest_node,cost_lambda,own_qt);
   }
 }
@@ -222,7 +220,7 @@ static double moveStandardDeviation(double distance_c2j,double basic_move_ratio,
 pair<const Ant*,const array<int,2>> Ant::addRandVecToOneRoute(
     const ACOSteiner &world, const Ant *base_ant,const int target_index,
     QuadTree<const int> &own_qt) {
-  this->path[target_index].reset(new SingleRoute);
+  this->path[target_index].reset(new SingleRoute());
   const ACOTable &TABLE=world.getACOTable();
   const auto &BASE_ROUTE=base_ant->path[target_index]->points;
   
@@ -238,7 +236,7 @@ pair<const Ant*,const array<int,2>> Ant::addRandVecToOneRoute(
   const double randvec_norm=norm_unit_dist(random_engine)*move_standard_deviation;
   array<double,2> base_random_vec{randvec_norm,0};
   rotate(base_random_vec,2*M_PI*uniform_unit_dist(random_engine));
-  return archedAdd(target_index,base_ant,base_random_vec,world,own_qt);
+  return archedAdd(target_index,base_ant,base_random_vec,world,own_qt);//NOTE: 上手く新しい中継点が保存できていない
 }
 
 pair<const Ant*,const array<int,2>> Ant::archedAdd(
@@ -248,9 +246,9 @@ pair<const Ant*,const array<int,2>> Ant::archedAdd(
        &base_points=base_ant->path[target_index]->points;
   const QuadTreeAnt &QTA=world.getQuadTreeAnt(target_index);
   
-  const int add_main_target=random_engine()%base_points.size();
-  const int arched_add_range=(random_engine()%(base_points.size()/2))*2+1;//奇数にしたい
-  const int add_start_index=max(0,add_main_target-arched_add_range);
+  const int add_main_target=random_engine()%(base_points.size()-1)+1;//NOTE: 0が標的になってはいけない
+  const int arched_add_range=(random_engine()%((base_points.size()+1)/2))*2+1;//奇数にしたい
+  const int add_start_index=max(0,add_main_target-arched_add_range/2);
   const int original_add_end_index=add_main_target+arched_add_range/2;//NOTE: 本来の中継点の個数を上回ることもある
   const int actual_add_end_index=min((int)base_points.size()-1,original_add_end_index);
   
@@ -295,11 +293,36 @@ void Ant::tracePushBack(
     QuadTree<const int> &own_qt){
   SingleRoute &route=*(this->path[target_index]);
   auto &points=route.points;
-  const v2d &last_point=points[points.size()-1];
+  const v2d last_point=points[points.size()-1];
   own_qt.addPoint(e,points.size(),target_index);
   points.push_back(e);
   route.cost+=cost_function(last_point,e);
   route.length+=euclid(last_point,e);
+}
+
+void Ant::intervalPushBack(
+    const int target_index,const v2d &point_in_world,
+    const function<double(const v2d&,const v2d&)> &cost_function,
+    const v2d &min_point,const v2d &size){
+  const v2d &max_point=min_point+size;
+  SingleRoute &route=*(this->path[target_index]);
+  auto &points=route.points;
+  //NOTE: vectorの要素を参照にするとバグる https://blog.shogonir.jp/entry/2017/09/15/000921
+  const v2d last_point=(points.size()?points[points.size()-1]:point_in_world);
+  const double distance=euclid(last_point,point_in_world);
+  if(distance<=this->MAX_DISTANCE){
+    points.push_back(point_in_world);
+  }else{
+    const double ideal_complement_distance=(this->MIN_DISTANCE+this->MAX_DISTANCE)/2;
+    const int vector_num=ceil(distance/ideal_complement_distance);//NOTE: round等だと距離条件が満たされない場合がある
+    const v2d &v=point_in_world-last_point;
+    for(int i=1;i<=vector_num;i++){
+      points.push_back((double)i/vector_num*v+last_point);
+    }
+  }
+  //TODO: 自身の経路が交差していたら短絡させる
+  route.cost+=cost_function(last_point,point_in_world);
+  route.length+=distance;
 }
 
 void Ant::properPushBack(
@@ -309,23 +332,27 @@ void Ant::properPushBack(
   const v2d &max_point=min_point+size;
   SingleRoute &route=*(this->path[target_index]);
   auto &points=route.points;
-  const v2d &last_point=points[points.size()-1];
+  if(points.size()==0)
+    intervalPushBack(target_index,e,cost_function,min_point,size);//最初の要素は結点の筈
+  const v2d last_point=points[points.size()-1];//NOTE: ここを参照にするとバグる https://blog.shogonir.jp/entry/2017/09/15/000921
   v2d p{max(min_point[0],e[0]),max(min_point[1],e[1])};
   p[0]=min(p[0],max_point[0]);p[1]=min(p[1],max_point[1]);
   const double distance=euclid(last_point,p);
   if(distance<this->MIN_DISTANCE)return;//NOTE: 簡単のため、近い時は重心を取るのではなくて追加しないようにした
-  if(distance<=this->MAX_DISTANCE){//this->MIN_DISTANCE<=distanceは保証されている
-    points.push_back(p);
-  }else{
-    const double ideal_complement_distance=mean(this->MIN_DISTANCE,this->MAX_DISTANCE);
-    const int vector_num=ceil(distance/ideal_complement_distance);//NOTE: round等だと距離条件が満たされない場合がある
-    for(int i=1;i<=vector_num;i++){
-      points.push_back((double)i/vector_num*p);
-    }
-  }
+  intervalPushBack(target_index,p,cost_function,min_point,size);//this->MIN_DISTANCE<=distanceは保証されている
   //TODO: 自身の経路が交差していたら短絡させる
-  route.cost+=cost_function(last_point,p);
-  route.length+=distance;
+}
+
+void Ant::intervalPushBack(
+    const int target_index,const v2d &e,
+    const function<double(const v2d&,const v2d&)> &cost_function,
+    QuadTree<const int> &own_qt){
+  const auto &points=this->path[target_index]->points;
+  const uint before_size=points.size();
+  intervalPushBack(target_index,e,cost_function,own_qt.minPoint(),own_qt.size());
+  const uint after_size=points.size();
+  for(int i=before_size;i<after_size;i++)
+    own_qt.addPoint(points[i],i,target_index);
 }
 
 void Ant::properPushBack(
@@ -340,7 +367,7 @@ void Ant::properPushBack(
     own_qt.addPoint(points[i],i,target_index);
 }
 
-inline static bool circleFilter(const v2d &v,const v2d &c,double radius){
+static bool circleFilter(const v2d &v,const v2d &c,double radius){
   return euclid(v-c)<=radius;
 }
 
@@ -384,26 +411,30 @@ const Ant* Ant::joinToOwn(
   const auto filter=[&current_point,allowance_reachable_radius](const v2d &p){
     return circleFilter(p,current_point,allowance_reachable_radius);
   };
-  vector<QuadTreeNode<const int>> &&points_reachables=own_qt.reachablePoints(
+  const vector<QuadTreeNode<const int>> &points_reachables=own_qt.reachablePoints(
       current_point[0],current_point[1],allowance_reachable_diameter,
       allowance_reachable_diameter,filter);
   if(points_reachables.size()==0)return nullptr;
   //NOTE: 以下で乱数を加えたところが自分の既に確定している経路と衝突していないことを保証
-  const QuadTreeNode<const int> *tmp=&points_reachables[0];
-  double min_distance,tmp_distance;
+  const QuadTreeNode<const int> *min_node=&points_reachables[0];
+  double min_distance=euclid(min_node->point,current_point);
   for(int i=1;i<points_reachables.size();i++){
-    if(tmp->value!=route_index)continue;
-    tmp_distance=euclid(tmp->point,current_point);
+    const QuadTreeNode<const int> *tmp=&points_reachables[i];
+    if(tmp->value==route_index)continue;
+    double tmp_distance=euclid(tmp->point,current_point);
     if(tmp_distance<min_distance){
       min_distance=tmp_distance;
-      tmp=&points_reachables[i];
+      min_node=&points_reachables[i];
     }
   }
   //最も近い中継点が関係する辺の内、最も近いところにくっつける
-  const auto &nearest_node=*tmp;
+  const auto &nearest_node=*min_node;
   //NOTE: 上で&points_reachables[0]から変わらなかった場合などは弾かなければならない
-  if(euclid(nearest_node.point,current_point)>allowance_reachable_radius)
+  if(euclid(nearest_node.point,current_point)>allowance_reachable_radius||
+    nearest_node.value==route_index)
     return nullptr;
+  for(int i=index_in_route+1;i<current_points.size();i++)
+    own_qt.removePoint(current_points[i],i,route_index);
   current_points.resize(index_in_route+1);
   joinCloseToNearestNode(route_index,nearest_node,cost_function,own_qt);
   return this;
@@ -422,39 +453,38 @@ void Ant::joinCloseToNearestNode(
     const int target_index,const QuadTreeNode<T> &nearest_node,
     const function<double(const v2d&,const v2d&)> &cost_function,
     QuadTree<const int> &own_qt){
-  const vector<v2d> &current_points=this->path[target_index]->points;
+  vector<v2d> &current_points=this->path[target_index]->points;
   const v2d &current_point=current_points[current_points.size()-1];
   const v2d nearest2current_vec=current_point-nearest_node.point;
-  const double nearest2current_norm_2=pow(euclid(nearest2current_vec),2);
   const auto &joint_target_route=*(this->path[nearest_node.value]);
   v2d back_nearest,forward_nearest;
   back_nearest=forward_nearest=nearest_node.point;
   double back_ratio=0,forward_ratio=0;
   if(nearest_node.index>0){
-    const v2d back_vector=
+    const v2d &back_vector=
         joint_target_route.points[nearest_node.index-1]-nearest_node.point;
-    const v2d &ortho_vec=dot(back_vector,nearest2current_vec)/
-                             nearest2current_norm_2*back_vector;
-    back_ratio=max(0.,dot(ortho_vec,back_vector));
-    if(back_ratio>0)back_nearest=nearest_node.point+ortho_vec;
+    back_ratio=max(0.,dot(back_vector,nearest2current_vec)/
+                          dot(back_vector,back_vector));
+    if(back_ratio>0)
+      back_nearest=nearest_node.point+back_ratio*back_vector;
   }
   if(nearest_node.index+1<joint_target_route.points.size()){
-    const v2d forward_vector=
+    const v2d &forward_vector=
         joint_target_route.points[nearest_node.index+1]-nearest_node.point;
-    const v2d &ortho_vec=dot(forward_vector,nearest2current_vec)/
-                             nearest2current_norm_2*forward_vector;
-    forward_ratio=max(0.,dot(ortho_vec,forward_vector));
-    if(forward_ratio>0)forward_nearest=nearest_node.point+ortho_vec;
+    forward_ratio=max(0.,dot(forward_vector,nearest2current_vec)/
+                             dot(forward_vector,forward_vector));
+    if(forward_ratio>0)
+      forward_nearest=nearest_node.point+forward_ratio*forward_vector;
   }
   Joint &target_joint=this->path[target_index]->joint;
   target_joint.route_index=nearest_node.value;
   if(cost_function(forward_nearest,current_point)<=
         cost_function(back_nearest,current_point)){
-    properPushBack(target_index,forward_nearest,cost_function,own_qt);
+    intervalPushBack(target_index,forward_nearest,cost_function,own_qt);
     target_joint.index_in_route=nearest_node.index;
     target_joint.forward_ratio=forward_ratio;
   }else{
-    properPushBack(target_index,back_nearest,cost_function,own_qt);
+    intervalPushBack(target_index,back_nearest,cost_function,own_qt);
     target_joint.index_in_route=nearest_node.index-1;
     target_joint.forward_ratio=1-forward_ratio;
   }

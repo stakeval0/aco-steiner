@@ -5,7 +5,7 @@ double euclid(const array<double,2> &v){
   return sqrt(v[0]*v[0]+v[1]*v[1]);
 }
 
-inline double euclid(const array<double,2> &a,const array<double,2> &b){
+double euclid(const array<double,2> &a,const array<double,2> &b){
   return euclid(a-b);
 }
 
@@ -15,42 +15,42 @@ void rotate(array<double,2> &v,double theta){
   v[1]=V[0]*sin(theta)+V[1]*cos(theta);
 }
 
-inline array<double,2>& operator+=(array<double,2> &v,double d){
+array<double,2>& operator+=(array<double,2> &v,double d){
   v[0]+=d;v[1]+=d;
   return v;
 }
 
-inline array<double,2>& operator+=(array<double,2> &v1,const array<double,2> &v2){
+array<double,2>& operator+=(array<double,2> &v1,const array<double,2> &v2){
   v1[0]+=v2[0];v1[1]+=v2[0];
   return v1;
 }
 
-inline array<double,2>& operator-=(array<double,2> &v,double d){
+array<double,2>& operator-=(array<double,2> &v,double d){
   v[0]-=d;v[1]-=d;
   return v;
 }
 
-inline array<double,2>& operator-=(array<double,2> &v1,const array<double,2> &v2){
+array<double,2>& operator-=(array<double,2> &v1,const array<double,2> &v2){
   v1[0]-=v2[0];v1[1]-=v2[0];
   return v1;
 }
 
-inline array<double,2>& operator*=(array<double,2> &v,double d){
+array<double,2>& operator*=(array<double,2> &v,double d){
   v[0]*=d;v[1]*=d;
   return v;
 }
 
-inline array<double,2>& operator*=(array<double,2> &v1,const array<double,2> &v2){
+array<double,2>& operator*=(array<double,2> &v1,const array<double,2> &v2){
   v1[0]*=v2[0];v1[1]*=v2[0];
   return v1;
 }
 
-inline array<double,2>& operator/=(array<double,2> &v,double d){
+array<double,2>& operator/=(array<double,2> &v,double d){
   v[0]/=d;v[1]/=d;
   return v;
 }
 
-inline array<double,2>& operator/=(array<double,2> &v1,const array<double,2> &v2){
+array<double,2>& operator/=(array<double,2> &v1,const array<double,2> &v2){
   v1[0]/=v2[0];v1[1]/=v2[0];
   return v1;
 }
@@ -60,7 +60,7 @@ array<double, 2> operator+(const array<double, 2>& v, double d) {
   return {v[0]+d,v[1]+d};
 }
 
-inline array<double, 2> operator+(double d, const array<double, 2>& v) {
+array<double, 2> operator+(double d, const array<double, 2>& v) {
   return v+d;
 }
 
@@ -73,7 +73,7 @@ array<double, 2> operator-(const array<double, 2>& v, double d) {
   return {v[0]-d,v[1]-d};
 }
 
-inline array<double, 2> operator-(double d, const array<double, 2>& v) {
+array<double, 2> operator-(double d, const array<double, 2>& v) {
   return {d-v[0],d-v[1]};
 }
 
@@ -86,7 +86,7 @@ array<double, 2> operator*(const array<double, 2>& v, double d) {
   return {v[0]*d,v[1]*d};
 }
 
-inline array<double, 2> operator*(double d, const array<double, 2>& v) {
+array<double, 2> operator*(double d, const array<double, 2>& v) {
   return v*d;
 }
 

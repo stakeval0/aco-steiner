@@ -3,9 +3,8 @@
 #include<array>
 #include<set>
 #include<functional>
-#include"../tools/json.hpp"
+//#include"../tools/JsonHead.hpp"
 using namespace std;
-using json=nlohmann::json;
 
 class Ant;
 
@@ -21,16 +20,17 @@ class ACOTable : public multiset<const Ant*,function<bool(const Ant*,const Ant*)
     long long max_size=16;
   public:
     ACOTable();
-    void setCapacity(long long size);
-    long long getCapacity() const;
+    inline void setCapacity(long long size){this->max_size=size;};
+    inline long long getCapacity() const {return this->max_size;};
     const Ant* dropout();
     double sum(ACOTableColumn target) const;
     double mean(ACOTableColumn target) const;
     double variance(ACOTableColumn target) const;
     double stdev(ACOTableColumn target) const;
-    json getJson() const;
-    json getJson(const int begin,const int end) const;
-    json getElementJson(const int index) const;
+    double best(ACOTableColumn target) const;
+    //json getJson() const;
+    //json getJson(const int begin,const int end) const;
+    //json getElementJson(const int index) const;
     //double pheromoneSum() const;//出来ればupdatePheromone()時に計算して変数として保存しておきたい
 };
 

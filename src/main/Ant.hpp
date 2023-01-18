@@ -26,6 +26,14 @@ class Ant{
         const int target_index,const v2d &e,
         const function<double(const v2d&,const v2d&)> &cost_function,
         QuadTree<const int> &own_qt);
+    void intervalPushBack(
+        const int target_index,const v2d &point_in_world,
+        const function<double(const v2d&,const v2d&)> &cost_function,
+        const v2d &min_point,const v2d &size);
+    void intervalPushBack(
+        const int target_index,const v2d &e,
+        const function<double(const v2d&,const v2d&)> &cost_function,
+        QuadTree<const int> &own_qt);
     void properPushBack(
         const int target_index,const v2d &e,
         const function<double(const v2d&,const v2d&)> &cost_function,
@@ -59,12 +67,12 @@ class Ant{
     void constructFirstRoute(const ACOSteiner &w);
   public:
     Ant(const ACOSteiner &world);
-    void evaporate(double evaporation_cofficient) const;
-    double pheromone() const;
-    double cost() const;
-    double length() const;
+    void evaporate(double evaporation_cofficient) const {this->pheromone_v*=evaporation_cofficient;};
+    inline double pheromone() const {return this->pheromone_v;};
+    inline double cost() const {return this->total_cost;};
+    inline double length() const {return this->total_length;};
     const vector<v2d>& getRoute(int index) const;
-    int routeNum() const;
+    inline int routeNum() const {return this->path.size();};
 };
 
 #endif//_ANT_HPP_

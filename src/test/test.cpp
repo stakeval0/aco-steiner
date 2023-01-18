@@ -4,8 +4,9 @@
 #include<random>
 #include<set>
 #include<stack>
-#include"../tools/json.hpp"
-//#include"../main/QuadTree.hpp"
+//#include"../tools/json.hpp"
+#include"../main/Util.hpp"
+#include"../main/QuadTree.hpp"
 using namespace std;
 
 vector<int> dependTree(const vector<int> &path,
@@ -52,7 +53,15 @@ void dependTreeTest(){
 //  cout<<(s.empty()?"empty":"not empty")<<endl;
 //}
 
-/*
+void setTest2(){
+  auto lambda=[](const int &a,const int &b){return a>b;};
+  set<int,decltype(lambda)> s(lambda);
+  for(int i=0;i<5;i++)s.insert(i);
+  for(auto &e:s){
+    cout<<e<<endl;
+  }
+}
+
 void quadTreeTest(){
   QuadTree<const int> qt({10,10},{100.0,100.0});
   vector<vector<array<double,2>>>routes(100,vector<array<double,2>>(100));
@@ -75,8 +84,8 @@ void quadTreeTest(){
     printf("%g,%g\n",p[0],p[1]);
   }
 }
-*/
 
+/*
 using json=nlohmann::json;
 void jsonTest(){
   vector<array<double,2>> data(5);
@@ -88,6 +97,7 @@ void jsonTest(){
   j.emplace_back(data);
   cout<<j<<endl;
 }
+*/
 
 int main(void){
   //forStaticTest(1);
@@ -95,6 +105,11 @@ int main(void){
   //quadTreeTest();
   //cout<<(uint)(UINT32_MAX>>32)<<endl;
   //dependTreeTest();
-  jsonTest();
+  //jsonTest();
+  //setTest2();
+  int hoge=1;
+  const int &fuga=hoge;
+  hoge+=1;
+  cout<<fuga<<endl;
   return 0;
 }

@@ -7,9 +7,9 @@
 #include"QuadTree.hpp"
 #include"ACOTable.hpp"
 
-constexpr double MIN_SPACE_RATIO_DEFAULT=1.0/100,MAX_SPACE_RATIO_DEFAULT=1.0/10;
+static constexpr double MIN_SPACE_RATIO_DEFAULT=1.0/100,MAX_SPACE_RATIO_DEFAULT=1.0/10;
 
-static inline void printArgumentErrorMessage(const char *func_name,const char *correct_argument_condition){
+static void printArgumentErrorMessage(const char *func_name,const char *correct_argument_condition){
   fprintf(stderr,"%s: argument needs to be %s.\n",func_name,correct_argument_condition);
 }
 
@@ -18,6 +18,7 @@ ACOSteiner::ACOSteiner(const vector<array<double,2>> &points){
   this->cost_function=static_cast<double(*)(
       const array<double,2>&,const array<double,2>&)>(euclid);
   double xmin=0,xmax=0,ymin=0,ymax=0;
+  this->points.resize(points.size());
   for(int i=0;i<points.size();i++){
     this->points[i][0]=points[i][0];
     this->points[i][1]=points[i][1];
@@ -30,7 +31,7 @@ ACOSteiner::ACOSteiner(const vector<array<double,2>> &points){
   this->qtworld.reserve(num_of_route);
   for(int i=0;i<num_of_route;i++){
     this->qtworld.emplace_back(points_offset,size);
-    this->pheromone_cofficient=cost_function(points[i],points[i+1]);
+    this->pheromone_cofficient+=cost_function(points[i],points[i+1]);
   }
   double diagnoal=euclid(size);
   this->min_distance=diagnoal*MIN_SPACE_RATIO_DEFAULT;
@@ -59,12 +60,6 @@ void ACOSteiner::search(){
     delete dropout_ant;
   }
 }
-
-inline void ACOSteiner::setCostFunction(const function<double(const array<double,2> &,const array<double,2> &)> &f){
-  this->cost_function=f;
-}
-
-inline double ACOSteiner::calcCost(const array<double,2> &p1,const array<double,2> &p2) const {return this->cost_function(p1,p2);}
 
 void ACOSteiner::setMinDistance(double d){
   if(d>=0&&d<=this->max_distance/2){
@@ -101,25 +96,11 @@ void ACOSteiner::setBasicMoveRatio(double value){
   printArgumentErrorMessage(__PRETTY_FUNCTION__,"not 0");
 }
 
-inline void ACOSteiner::setTableCapacity(ll size){this->table->setCapacity(size);}
-
-inline ll ACOSteiner::getTime() const {return this->time;}
-inline const array<double,2>& ACOSteiner::getConnectPoint(int index) const {
-  return this->points[index];
-}
-inline const vector<array<double,2>>& ACOSteiner::getConnectPoints() const {
-  return this->points;
-}
-inline double ACOSteiner::getMinDistance() const {return this->min_distance;}
-inline double ACOSteiner::getMaxDistance() const {return this->max_distance;}
-inline double ACOSteiner::getMutationProbability() const {return this->mutation_probability;}
-inline double ACOSteiner::getEvaporationCofficient() const {return this->evaporation_cofficient;}
-inline double ACOSteiner::getBasicMoveRatio() const {return this->basic_move_ratio;}
-inline ll ACOSteiner::getTableCapacity() const {return this->table->getCapacity();}
-
-inline const ACOTable& ACOSteiner::getACOTable() const {return *this->table;}
-inline const vector<QuadTreeAnt>& ACOSteiner::getQuadTreeAntV() const {return this->qtworld;}
-inline const QuadTreeAnt& ACOSteiner::getQuadTreeAnt(int index) const {return this->qtworld[index];}
+void ACOSteiner::setTableCapacity(ll size){this->table->setCapacity(size);}
+ll ACOSteiner::getTableCapacity() const { return this->table->getCapacity(); }
+const QuadTreeAnt& ACOSteiner::getQuadTreeAnt(int index) const {
+  return this->qtworld[index];
+};
 
 //以下でprivate関数
 

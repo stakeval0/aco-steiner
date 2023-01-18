@@ -46,10 +46,10 @@ class QuadTree {
     vector<QuadTreeNode<T>> reachablePoints(
         double cx,double cy,double width,double height,
         const function<bool(const array<double,2>&)> &filter) const;
-    double width() const;
-    double height() const;
-    const array<double,2>& size() const;
-    const array<double,2>& minPoint() const;
+    inline double width() const {return this->size_v[0];};
+    inline double height() const {return this->size_v[1];};
+    inline const array<double,2>& size() const {return this->size_v;};
+    inline const array<double,2>& minPoint() const {return this->offset_v;};
 };
 
 #endif//_QUAD_TREE_HPP_

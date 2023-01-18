@@ -1784,7 +1784,7 @@ JSON_HEDLEY_DIAGNOSTIC_POP
 */
 #define NLOHMANN_JSON_SERIALIZE_ENUM(ENUM_TYPE, ...)                                            \
     template<typename BasicJsonType>                                                            \
-    inline void to_json(BasicJsonType& j, const ENUM_TYPE& e)                                   \
+    void to_json(BasicJsonType& j, const ENUM_TYPE& e)                                   \
     {                                                                                           \
         static_assert(std::is_enum<ENUM_TYPE>::value, #ENUM_TYPE " must be an enum!");          \
         static const std::pair<ENUM_TYPE, BasicJsonType> m[] = __VA_ARGS__;                     \
@@ -1796,7 +1796,7 @@ JSON_HEDLEY_DIAGNOSTIC_POP
         j = ((it != std::end(m)) ? it : std::begin(m))->second;                                 \
     }                                                                                           \
     template<typename BasicJsonType>                                                            \
-    inline void from_json(const BasicJsonType& j, ENUM_TYPE& e)                                 \
+    void from_json(const BasicJsonType& j, ENUM_TYPE& e)                                 \
     {                                                                                           \
         static_assert(std::is_enum<ENUM_TYPE>::value, #ENUM_TYPE " must be an enum!");          \
         static const std::pair<ENUM_TYPE, BasicJsonType> m[] = __VA_ARGS__;                     \
@@ -2405,6 +2405,8 @@ This serializer ignores the template arguments and uses ADL
 ([argument-dependent lookup](https://en.cppreference.com/w/cpp/language/adl))
 for serialization.
 */
+#ifndef _BASIC_JSON_
+#define _BASIC_JSON_
 template<typename T = void, typename SFINAE = void>
 struct adl_serializer;
 
@@ -2419,6 +2421,7 @@ template<template<typename U, typename V, typename... Args> class ObjectType =
          template<typename T, typename SFINAE = void> class JSONSerializer =
          adl_serializer>
 class basic_json;
+#endif//_BASIC_JSON_
 
 /*!
 @brief JSON Pointer
@@ -2874,7 +2877,7 @@ Returns an ordering that is similar to Python:
 
 @since version 1.0.0
 */
-inline bool operator<(const value_t lhs, const value_t rhs) noexcept
+bool operator<(const value_t lhs, const value_t rhs) noexcept
 {
     static constexpr std::array<std::uint8_t, 8> order = {{
             0 /* null */, 3 /* object */, 4 /* array */, 5 /* string */,
@@ -12967,7 +12970,7 @@ satisfies (Definition 3.2 from [1])
 
      alpha <= e_c + e + q <= gamma.
 */
-inline cached_power get_cached_power_for_binary_exponent(int e)
+cached_power get_cached_power_for_binary_exponent(int e)
 {
     // Now
     //
@@ -13131,7 +13134,7 @@ inline cached_power get_cached_power_for_binary_exponent(int e)
 For n != 0, returns k, such that pow10 := 10^(k-1) <= n < 10^k.
 For n == 0, returns 1 and sets pow10 := 1.
 */
-inline int find_largest_pow10(const std::uint32_t n, std::uint32_t& pow10)
+int find_largest_pow10(const std::uint32_t n, std::uint32_t& pow10)
 {
     // LCOV_EXCL_START
     if (n >= 1000000000)
@@ -13187,7 +13190,7 @@ inline int find_largest_pow10(const std::uint32_t n, std::uint32_t& pow10)
     }
 }
 
-inline void grisu2_round(char* buf, int len, std::uint64_t dist, std::uint64_t delta,
+void grisu2_round(char* buf, int len, std::uint64_t dist, std::uint64_t delta,
                          std::uint64_t rest, std::uint64_t ten_k)
 {
     assert(len >= 1);
@@ -13228,7 +13231,7 @@ inline void grisu2_round(char* buf, int len, std::uint64_t dist, std::uint64_t d
 Generates V = buffer * 10^decimal_exponent, such that M- <= V <= M+.
 M- and M+ must be normalized and share the same exponent -60 <= e <= -32.
 */
-inline void grisu2_digit_gen(char* buffer, int& length, int& decimal_exponent,
+void grisu2_digit_gen(char* buffer, int& length, int& decimal_exponent,
                              diyfp M_minus, diyfp w, diyfp M_plus)
 {
     static_assert(kAlpha >= -60, "internal error");
@@ -13469,7 +13472,7 @@ len is the length of the buffer (number of decimal digits)
 The buffer must be large enough, i.e. >= max_digits10.
 */
 JSON_HEDLEY_NON_NULL(1)
-inline void grisu2(char* buf, int& len, int& decimal_exponent,
+void grisu2(char* buf, int& len, int& decimal_exponent,
                    diyfp m_minus, diyfp v, diyfp m_plus)
 {
     assert(m_plus.e == m_minus.e);
@@ -13569,7 +13572,7 @@ void grisu2(char* buf, int& len, int& decimal_exponent, FloatType value)
 */
 JSON_HEDLEY_NON_NULL(1)
 JSON_HEDLEY_RETURNS_NON_NULL
-inline char* append_exponent(char* buf, int e)
+char* append_exponent(char* buf, int e)
 {
     assert(e > -1000);
     assert(e <  1000);
@@ -13621,7 +13624,7 @@ notation. Otherwise it will be printed in exponential notation.
 */
 JSON_HEDLEY_NON_NULL(1)
 JSON_HEDLEY_RETURNS_NON_NULL
-inline char* format_buffer(char* buf, int len, int decimal_exponent,
+char* format_buffer(char* buf, int len, int decimal_exponent,
                            int min_exp, int max_exp)
 {
     assert(min_exp < 0);
@@ -14300,7 +14303,7 @@ class serializer
     @param[in] x  unsigned integer number to count its digits
     @return    number of decimal digits
     */
-    inline unsigned int count_digits(number_unsigned_t x) noexcept
+    unsigned int count_digits(number_unsigned_t x) noexcept
     {
         unsigned int n_digits = 1;
         for (;;)
@@ -14576,7 +14579,7 @@ class serializer
      * absolute values of INT_MIN and INT_MAX are usually not the same. See
      * #1708 for details.
      */
-    inline number_unsigned_t remove_sign(number_integer_t x) noexcept
+    number_unsigned_t remove_sign(number_integer_t x) noexcept
     {
         assert(x < 0 and x < (std::numeric_limits<number_integer_t>::max)());
         return static_cast<number_unsigned_t>(-(x + 1)) + 1;
@@ -20190,7 +20193,7 @@ class basic_json
     could be used, for instance
     @code {.cpp}
     template<typename T, typename = typename std::enable_if<std::is_floating_point<T>::value, T>::type>
-    inline bool is_same(T a, T b, T epsilon = std::numeric_limits<T>::epsilon()) noexcept
+    bool is_same(T a, T b, T epsilon = std::numeric_limits<T>::epsilon()) noexcept
     {
         return std::abs(a - b) <= epsilon;
     }
@@ -22671,7 +22674,7 @@ struct less<::nlohmann::detail::value_t>
 @since version 1.0.0
 */
 template<>
-inline void swap<nlohmann::json>(nlohmann::json& j1, nlohmann::json& j2) noexcept(
+void swap<nlohmann::json>(nlohmann::json& j1, nlohmann::json& j2) noexcept(
     is_nothrow_move_constructible<nlohmann::json>::value and
     is_nothrow_move_assignable<nlohmann::json>::value
 )
@@ -22695,7 +22698,7 @@ if no parse error occurred.
 @since version 1.0.0
 */
 JSON_HEDLEY_NON_NULL(1)
-inline nlohmann::json operator "" _json(const char* s, std::size_t n)
+nlohmann::json operator "" _json(const char* s, std::size_t n)
 {
     return nlohmann::json::parse(s, s + n);
 }
@@ -22714,7 +22717,7 @@ object if no parse error occurred.
 @since version 2.0.0
 */
 JSON_HEDLEY_NON_NULL(1)
-inline nlohmann::json::json_pointer operator "" _json_pointer(const char* s, std::size_t n)
+nlohmann::json::json_pointer operator "" _json_pointer(const char* s, std::size_t n)
 {
     return nlohmann::json::json_pointer(std::string(s, n));
 }
