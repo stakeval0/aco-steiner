@@ -5,6 +5,7 @@
 #include<memory>
 #include<functional>
 #include<optional>
+#include<string>
 using namespace std;
 using ll=long long;
 using v2d=array<double,2>;//TODO: 後でクラスを作り直してリファクタリングしたい
@@ -21,6 +22,7 @@ class Ant{
     const double MIN_DISTANCE,MAX_DISTANCE;
     double total_cost,total_length;//constは付けられないが、生成以降、少なくともpublic関数では定数として扱って良い
     mutable double pheromone_v;
+    mutable string json_buffer;
     vector<shared_ptr<SingleRoute>>path;//pair<int,vec>のintで戻るノード数を管理する
     void tracePushBack(
         const int target_index,const v2d &e,
@@ -73,6 +75,7 @@ class Ant{
     inline double length() const {return this->total_length;};
     const vector<v2d>& getRoute(int index) const;
     inline int routeNum() const {return this->path.size();};
+    const string& json() const;
 };
 
 #endif//_ANT_HPP_

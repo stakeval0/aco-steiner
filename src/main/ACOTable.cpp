@@ -1,4 +1,5 @@
 #include<cmath>
+#include<sstream>
 #include"Ant.hpp"
 #include"ACOTable.hpp"
 #include"../tools/json.hpp"
@@ -59,6 +60,23 @@ double ACOTable::stdev(ACOTableColumn target) const {
 double ACOTable::best(ACOTableColumn target) const {
   double (Ant::*getter)(void)const=findGetter(target);
   return ((*(this->begin()))->*getter)();
+}
+
+string ACOTable::json() const {
+  return this->json(0,this->size());
+}
+
+string ACOTable::json(const int begin, const int end) const {
+  stringstream ss;
+  ss<<'[';
+  auto itr=this->begin();
+  for(int i=0;i<=begin;i++)itr++;
+  for(int i=begin;i<end&&itr!=this->end();i++,itr++){
+    const Ant &a=**itr;
+    ss<<a.json()<<',';
+  }
+  ss<<']';
+  return ss.str();
 }
 
 //json ACOTable::getJson() const {

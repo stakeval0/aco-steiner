@@ -28,8 +28,8 @@ class ACOTable : public multiset<const Ant*,function<bool(const Ant*,const Ant*)
     double variance(ACOTableColumn target) const;
     double stdev(ACOTableColumn target) const;
     double best(ACOTableColumn target) const;
-    //json getJson() const;
-    //json getJson(const int begin,const int end) const;
+    string json() const;
+    string json(const int begin,const int end) const;
     //json getElementJson(const int index) const;
     //double pheromoneSum() const;//出来ればupdatePheromone()時に計算して変数として保存しておきたい
 };

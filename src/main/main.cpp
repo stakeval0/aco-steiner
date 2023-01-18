@@ -21,7 +21,7 @@ int main(int argc, char const *argv[]){
   for(int i=0;i<100;i++){
     acos.search();
     for(auto &e:acos.getACOTable()){
-      cout<<e->pheromone()<<','<<e->cost()<<' ';
+      cout<<e->json()<<' ';
     }
     cout<<endl;
     //const ACOTable &t=acos.getACOTable();

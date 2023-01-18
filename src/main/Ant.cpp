@@ -3,6 +3,7 @@
 #include<algorithm>
 #include<stack>
 #include<iostream>
+#include<sstream>
 #include"Util.hpp"
 #include"Ant.hpp"
 #include"ACOTable.hpp"
@@ -42,6 +43,24 @@ Ant::Ant(const ACOSteiner &world) : BIRTH_TIME(world.getTime()),
 
 const vector<v2d>& Ant::getRoute(int index) const {
   return this->path[index]->points;
+}
+
+const string& Ant::json() const {
+  if(this->json_buffer.size()!=0)return this->json_buffer;
+  stringstream ss;
+  ss<<"{\"cost\":"<<(this->cost())<<",\"length\":"<<this->length();
+  ss<<",\"points\":[";
+  for(int i=0;i<this->path.size();i++){
+    ss<<'[';
+    const auto &points=this->path[i]->points;
+    for(int j=0;j<points.size();j++){
+      ss<<"["<<points[j][0]<<','<<points[j][1]<<"],";
+    }
+    ss<<"],";
+  }
+  ss<<"]}";
+  this->json_buffer=ss.str();
+  return this->json_buffer;
 }
 
 //以下でprivate関数
