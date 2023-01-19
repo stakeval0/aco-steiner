@@ -28,6 +28,16 @@ Ant::Ant(const ACOSteiner &world) : BIRTH_TIME(world.getTime()),
   this->path.resize(world.getQuadTreeAntV().size());
   if(world.getACOTable().size())constructModifiedRoute(world,this->BIRTH_TIME);
   else constructFirstRoute(world);
+  for(int i=0;i<this->path.size();i<i++){
+    const auto points=this->path[i]->points;
+    double sum=0;
+    for(int j=0;j<points.size()-1;j++){
+      sum+=world.calcCost(points[j],points[j+1]);
+    }
+    if(this->path[i]->cost!=sum){
+      this->path[i]->cost=sum;//XXX: 何故かこうしないと費用の計算が正しく行われない
+    }
+  }
   this->total_cost=this->total_length=0;
   for(int i=0;i<path.size();i++){
     this->total_cost+=this->path[i]->cost;
@@ -54,9 +64,11 @@ const string& Ant::json() const {
     ss<<'[';
     const auto &points=this->path[i]->points;
     for(int j=0;j<points.size();j++){
-      ss<<"["<<points[j][0]<<','<<points[j][1]<<"],";
+      ss<<"["<<points[j][0]<<','<<points[j][1]<<']';
+      if(j<points.size()-1)ss<<',';
     }
-    ss<<"],";
+    ss<<']';
+    if(i<this->path.size()-1)ss<<',';
   }
   ss<<"]}";
   this->json_buffer=ss.str();
@@ -77,7 +89,7 @@ void Ant::constructFirstRoute(const ACOSteiner &world){
   auto cost_lambda=[&world](const v2d &v1,const v2d &v2){
     return world.calcCost(v1,v2);
   };
-  for(int i=0;i<this->path.size();i++)this->path[i].reset(new SingleRoute);
+  for(int i=0;i<this->path.size();i++)this->path[i]=make_shared<SingleRoute>();
   SingleRoute &ground_route=*this->path[0];
   ground_route.points.push_back(connect_points[1]);
   properPushBack(0,connect_points[0],cost_lambda,QTA0.minPoint(),QTA0.size());
@@ -168,6 +180,7 @@ void Ant::constructModifiedRoute(const ACOSteiner &world,ll current_time){
           接合点とその直前の中継点の辺に繋がっている時は修正される。
   */
   //他の蟻と経路を接合させた時の接合点を処理するためには、ここで接合点の移動を考慮した方が都合が良い
+  if(target_route_index==0)return;
   vector<int> &&after_depend=dependTree(this->path,target_route_index);
   vector<int> check_order(after_depend.size());
   for(int i=0;i<check_order.size();i++)check_order[i]=i;
@@ -198,6 +211,8 @@ void Ant::constructModifiedRoute(const ACOSteiner &world,ll current_time){
       uint tmp=additional_decided_route.top();additional_decided_route.pop();
       own_qt.addRoute(this->path[tmp]->points,tmp);
     }
+    this->path[i]=make_shared<SingleRoute>();
+    *(this->path[i])=*(base_ant->path[i]);
     auto cost_lambda=[&world](const v2d &v1,const v2d &v2){
       return world.calcCost(v1,v2);
     };
@@ -239,13 +254,16 @@ static double moveStandardDeviation(double distance_c2j,double basic_move_ratio,
 pair<const Ant*,const array<int,2>> Ant::addRandVecToOneRoute(
     const ACOSteiner &world, const Ant *base_ant,const int target_index,
     QuadTree<const int> &own_qt) {
-  this->path[target_index].reset(new SingleRoute());
+  this->path[target_index].reset();
+  this->path[target_index]=make_shared<SingleRoute>();
+  this->path[target_index]->cost=0;
+  this->path[target_index]->length=0;
   const ACOTable &TABLE=world.getACOTable();
-  const auto &BASE_ROUTE=base_ant->path[target_index]->points;
+  const auto &BASE_POINTS=base_ant->path[target_index]->points;
   
   //標準偏差を掛けると発散する危険があるので以下のようにする。
   const double move_standard_deviation=moveStandardDeviation(
-    euclid(BASE_ROUTE[0],BASE_ROUTE[BASE_ROUTE.size()-1]),
+    euclid(BASE_POINTS[0],BASE_POINTS[BASE_POINTS.size()-1]),
     world.getBasicMoveRatio(),
     TABLE.stdev(ACOTableColumn::COST),
     TABLE.mean(ACOTableColumn::LENGTH),
@@ -268,7 +286,8 @@ pair<const Ant*,const array<int,2>> Ant::archedAdd(
   const int add_main_target=random_engine()%(base_points.size()-1)+1;//NOTE: 0が標的になってはいけない
   const int arched_add_range=(random_engine()%((base_points.size()+1)/2))*2+1;//奇数にしたい
   const int add_start_index=max(0,add_main_target-arched_add_range/2);
-  const int original_add_end_index=add_main_target+arched_add_range/2;//NOTE: 本来の中継点の個数を上回ることもある
+  int original_add_end_index=add_main_target+arched_add_range/2;//NOTE: 本来の中継点の個数を上回ることもある
+  if(target_index==0)original_add_end_index=min((int)base_points.size()-1,original_add_end_index);
   const int actual_add_end_index=min((int)base_points.size()-1,original_add_end_index);
   
   target_points.reserve(base_points.size());
@@ -340,8 +359,8 @@ void Ant::intervalPushBack(
     }
   }
   //TODO: 自身の経路が交差していたら短絡させる
-  route.cost+=cost_function(last_point,point_in_world);
-  route.length+=distance;
+  //route.cost+=cost_function(last_point,point_in_world);
+  //route.length+=distance;
 }
 
 void Ant::properPushBack(
@@ -351,8 +370,10 @@ void Ant::properPushBack(
   const v2d &max_point=min_point+size;
   SingleRoute &route=*(this->path[target_index]);
   auto &points=route.points;
-  if(points.size()==0)
+  if(points.size()==0){
     intervalPushBack(target_index,e,cost_function,min_point,size);//最初の要素は結点の筈
+    return;
+  }
   const v2d last_point=points[points.size()-1];//NOTE: ここを参照にするとバグる https://blog.shogonir.jp/entry/2017/09/15/000921
   v2d p{max(min_point[0],e[0]),max(min_point[1],e[1])};
   p[0]=min(p[0],max_point[0]);p[1]=min(p[1],max_point[1]);
