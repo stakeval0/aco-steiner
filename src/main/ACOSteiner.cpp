@@ -39,6 +39,9 @@ ACOSteiner::ACOSteiner(const vector<array<double,2>> &points){
 }
 
 ACOSteiner::~ACOSteiner(){
+  for(auto &e:*this->table){
+    delete e;
+  }
   delete this->table;//ACOTableをunique_ptrにすれば書かなくて良くなる
 }
 
