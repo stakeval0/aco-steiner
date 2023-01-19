@@ -49,6 +49,7 @@ void ACOSteiner::search(){
   countTime();
   Ant *new_ant=new Ant(*this);
   this->table->insert(new_ant);
+  //cout<<new_ant->pheromone()<<endl;
   //4分木の世界へ登録
   for(int i=0;i<new_ant->routeNum();i++){
     this->qtworld[i].addRoute(new_ant->getRoute(i),new_ant);
