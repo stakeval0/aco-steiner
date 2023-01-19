@@ -2,7 +2,6 @@
 #include<sstream>
 #include"Ant.hpp"
 #include"ACOTable.hpp"
-#include"../tools/json.hpp"
 using ll=long long;
 
 //引数にACOTableColumnを取るfindGetterという関数で、Antクラスの、引数がvoid、返値がdoubleな、フィールドを変えない関数(const)の関数ポインタを返す
@@ -78,32 +77,3 @@ string ACOTable::json(const int begin, const int end) const {
   ss<<']';
   return ss.str();
 }
-
-//json ACOTable::getJson() const {
-//  return getJson(0,this->size());
-//}
-//
-//json ACOTable::getJson(const int begin, const int end) const {
-//  json ret=json::array();
-//  auto itr=this->begin();
-//  for(int i=0;i<=begin;i++)itr++;
-//  for(int i=begin;i<end&&itr!=this->end();i++,itr++){
-//    const Ant &a=**itr;
-//    ret.emplace_back(json::array());
-//    for(int j=0;j<a.routeNum();j++){
-//      ret[i].emplace_back(a.getRoute(j));
-//    }
-//  }
-//  return ret;
-//}
-//
-//json ACOTable::getElementJson(const int index) const {
-//  json ret=json::array();
-//  auto itr=this->begin();
-//  for(int i=0;i<=index;i++)itr++;
-//  const Ant &a=**itr;
-//  for(int i=0;i<a.routeNum();i++){
-//    ret.emplace_back(a.getRoute(i));
-//  }
-//  return ret;
-//}
