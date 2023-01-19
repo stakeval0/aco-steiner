@@ -24,7 +24,8 @@ ACOTable::ACOTable(){
 
 const Ant* ACOTable::dropout(){
   if(this->size()<=this->max_size)return nullptr;
-  auto target=this->begin();
+  auto target=this->end();
+  target--;
   const Ant* ret=*target;
   this->erase(target);
   return ret;
