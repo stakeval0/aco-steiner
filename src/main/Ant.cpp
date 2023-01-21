@@ -196,7 +196,31 @@ void Ant::constructModifiedRoute(const ACOSteiner &world, ll current_time) {
           接合点とその直前の中継点の辺に繋がっている時は修正される。
   */
   // 他の蟻と経路を接合させた時の接合点を処理するためには、ここで接合点の移動を考慮した方が都合が良い
-  if (target_route_index == 0) return;
+  auto cost_lambda = [&world](const v2d &v1, const v2d &v2) {
+    return world.calcCost(v1, v2);
+  };
+  if (target_route_index == 0) {
+    auto &current_points=this->path[0]->points;
+    const auto &ideal_joint_point=world.getConnectPoint(0);
+    const double distance=
+        euclid(ideal_joint_point,current_points[current_points.size()-1]);
+    if(distance>=__DBL_EPSILON__) {
+      if(distance>this->MIN_DISTANCE){
+        properPushBack(0,ideal_joint_point,cost_lambda,own_qt);
+      }else{
+        const int last_index=current_points.size()-1;
+        own_qt.removePoint(current_points[last_index],last_index,0);
+        if(current_points.size()<=1)__builtin_unreachable();
+        if(current_points.size()==2){
+          current_points[last_index]=ideal_joint_point;
+          own_qt.addPoint(ideal_joint_point,last_index,0);
+        }else{
+          current_points.resize(last_index);
+          intervalPushBack(0,ideal_joint_point,cost_lambda,own_qt);
+        }
+      }
+    }
+  }
   vector<int> &&after_depend = dependTree(this->path, target_route_index);
   vector<int> check_order(after_depend.size());
   for (int i = 0; i < check_order.size(); i++) check_order[i] = i;
@@ -210,7 +234,7 @@ void Ant::constructModifiedRoute(const ACOSteiner &world, ll current_time) {
        own_order++)
     ;  // OPTIMIZE: ここを二分探索にしたい
   stack<uint> additional_decided_route;
-  for (int i = own_order + 1; i < check_order.size() == 1; i++) {
+  for (int i = own_order + 1; i < check_order.size(); i++) {
     const uint current_index = check_order[i];
     const Joint &joint = this->path[current_index]->joint;
     const auto &joint_points =
@@ -234,9 +258,6 @@ void Ant::constructModifiedRoute(const ACOSteiner &world, ll current_time) {
     }
     this->path[i] = make_shared<SingleRoute>();
     *(this->path[i]) = *(base_ant->path[i]);
-    auto cost_lambda = [&world](const v2d &v1, const v2d &v2) {
-      return world.calcCost(v1, v2);
-    };
     const Ant *tmp;
     for (int j = 0; j < current_points.size(); j++) {
       tmp = joinToOwn(current_index, j, own_qt, world.getMaxDistance(),
@@ -245,7 +266,7 @@ void Ant::constructModifiedRoute(const ACOSteiner &world, ll current_time) {
     }
     if (tmp) continue;
     const v2d &end_point = current_points[current_points.size() - 1];
-    v2d &nearest_point = this->path[0]->points[0];
+    v2d nearest_point = this->path[0]->points[0];
     double min_distance = euclid(nearest_point, end_point);
     uint nearest_route_index = 0, index_in_nearest_route = 0;
     for (int j = 0; j < i; j++) {
@@ -368,6 +389,7 @@ void Ant::tracePushBack(
   auto &points = route.points;
   const v2d last_point = points[points.size() - 1];
   own_qt.addPoint(e, points.size(), target_index);
+  if(points.size()>0&&euclid(e,last_point)<this->MIN_DISTANCE)return;
   points.push_back(e);
   route.cost += cost_function(last_point, e);
   route.length += euclid(last_point, e);
@@ -512,9 +534,9 @@ const Ant *Ant::joinToOwn(
   if (points_reachables.size() == 0) return nullptr;
   // NOTE:
   // 以下で乱数を加えたところが自分の既に確定している経路と衝突していないことを保証
-  const QuadTreeNode<const int> *min_node = &points_reachables[0];
-  double min_distance = euclid(min_node->point, current_point);
-  for (int i = 1; i < points_reachables.size(); i++) {
+  const QuadTreeNode<const int> *min_node = nullptr;
+  double min_distance = __DBL_MAX__;
+  for (int i = 0; i < points_reachables.size(); i++) {
     const QuadTreeNode<const int> *tmp = &points_reachables[i];
     if (tmp->value == route_index) continue;
     double tmp_distance = euclid(tmp->point, current_point);
@@ -524,14 +546,11 @@ const Ant *Ant::joinToOwn(
     }
   }
   // 最も近い中継点が関係する辺の内、最も近いところにくっつける
+  if (!min_node) return nullptr;
   const auto &nearest_node = *min_node;
-  // NOTE:
-  // 上で&points_reachables[0]から変わらなかった場合などは弾かなければならない
-  if (euclid(nearest_node.point, current_point) > allowance_reachable_radius ||
-      nearest_node.value == route_index)
-    return nullptr;
-  for (int i = index_in_route + 1; i < current_points.size(); i++)
+  for (int i = index_in_route + 1; i < current_points.size(); i++){
     own_qt.removePoint(current_points[i], i, route_index);
+  }
   current_points.resize(index_in_route + 1);
   joinCloseToNearestNode(route_index, nearest_node, cost_function, own_qt);
   return this;

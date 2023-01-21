@@ -3,7 +3,7 @@
 #include <array>
 #include <functional>
 #include <set>
-// #include"../tools/JsonHead.hpp"
+#include<string>
 using namespace std;
 
 class Ant;
@@ -32,9 +32,6 @@ class ACOTable
   double best(ACOTableColumn target) const;
   string json() const;
   string json(const int begin, const int end) const;
-  // json getElementJson(const int index) const;
-  // double pheromoneSum()
-  // const;//出来ればupdatePheromone()時に計算して変数として保存しておきたい
 };
 
 #endif  //_ACO_TABLE_HPP_

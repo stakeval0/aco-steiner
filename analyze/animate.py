@@ -17,9 +17,9 @@ for points in uniq:
     im=[]
     for single_route in points:
         tmp=np.array(single_route).T
-        im=im+plt.plot(tmp[0],tmp[1])
+        im=im+plt.plot(tmp[0],tmp[1],marker='o')
     ims.append(im)
-ani = ArtistAnimation(fig, ims, interval=1000)
+ani = ArtistAnimation(fig, ims, interval=500)
 #ani.save('animate.gif')
 plt.show()
 # mp4ファイルに保存

@@ -18,7 +18,7 @@ int main(int argc, char const *argv[]) {
   // cout<<acos.getEvaporationCofficient()<<endl;
   cout << "[";
   // constexpr int n=10000;
-  constexpr int n = 10000;
+  constexpr int n = 1000;
   double min = __DBL_MAX__;
   for (int i = 0; i < n; i++) {
     acos.search();
@@ -26,10 +26,10 @@ int main(int argc, char const *argv[]) {
     //   cout<<e->json()<<' ';
     // }
     // cout<<endl;
-    // if(i<n-10)continue;
     const ACOTable &t = acos.getACOTable();
     if (min > t.best(ACOTableColumn::COST)) min = t.best(ACOTableColumn::COST);
-    // cout<<t.best(ACOTableColumn::PHEROMONE)<<','<<t.best(ACOTableColumn::COST)<<endl;
+    //if(i<n-10)continue;
+    //cout<<t.best(ACOTableColumn::PHEROMONE)<<','<<t.best(ACOTableColumn::COST)<<endl;
     const Ant &a = **t.begin();
     cout << a.json();
     if (i < n - 1) cout << ',';
