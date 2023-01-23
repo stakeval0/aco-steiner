@@ -389,6 +389,9 @@ void Ant::tracePushBack(
   auto &points = route.points;
   const v2d last_point = points[points.size() - 1];
   own_qt.addPoint(e, points.size(), target_index);
+  //FIXME: ここで弾かないと非常に近い点が除去されず、
+  //       計算誤差で最近傍点を正しく見つけられなくなるが、
+  //       これの影響で接合点をが除去されてしまうこともある
   if(points.size()>0&&euclid(e,last_point)<this->MIN_DISTANCE)return;
   points.push_back(e);
   route.cost += cost_function(last_point, e);
